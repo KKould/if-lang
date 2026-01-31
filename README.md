@@ -78,86 +78,14 @@ match t {
 ```
 
 ## Example
-- BST Top-K: [examples/bst_topk.rs](examples/bst_topk.rs)
+- BST Top-K (DSL source): [examples/bst_topk.if](examples/bst_topk.if)
+- Extra methods (Rust source): [examples/bst_topk_extra.rs](examples/bst_topk_extra.rs)
 
-Run it:
+Run with a Rust extra file (auto-compiled to a dylib):
 ```
-cargo run --example bst_topk
+cargo run --bin if_lang -- extra examples/bst_topk_extra.rs examples/bst_topk.if
 ```
-
-## Externs in Rust (host implementation)
-The DSL declares externs with `extern fn`. At runtime, you register the Rust
-implementations and evaluate the program:
-
-```rust
-use std::collections::HashMap;
-use std::sync::Arc;
-
-use if_lang::eval::{eval_program_with_builtins, BuiltinFn, EvalError, Value, ValueKey};
-use if_lang::lexer::Lexer;
-use if_lang::lower::lower_program;
-use if_lang::parser::parse_program;
-use if_lang::validate::validate_program;
-
-fn main() {
-    let source = r#"
-        extern fn take_k(xs, k);
-        extern fn get(m, key);
-        let xs = [9, 7, 5, 3];
-        let cfg = #{ 0: 2 };
-        let k = get(cfg, 0);
-        xs |> take_k(k)
-    "#;
-
-    let tokens = Lexer::new(source).lex_all();
-    let surface = parse_program(&tokens).expect("parse");
-    validate_program(&surface).expect("validate");
-    let core = lower_program(surface);
-
-    let mut builtins: HashMap<String, BuiltinFn> = HashMap::new();
-    builtins.insert("take_k".into(), Arc::new(take_k));
-    builtins.insert("get".into(), Arc::new(get));
-
-    let result = eval_program_with_builtins(&core, &builtins)
-        .expect("eval")
-        .expect("value");
-    println!("{:?}", result);
-}
-
-fn take_k(args: &[Value]) -> Result<Value, EvalError> {
-    if args.len() != 2 {
-        return Err(EvalError::new("take_k expects 2 args"));
-    }
-    let list = match &args[0] {
-        Value::List(items) => items.clone(),
-        _ => return Err(EvalError::new("take_k expects List")),
-    };
-    let k = match &args[1] {
-        Value::Int(v) => *v,
-        _ => return Err(EvalError::new("take_k expects Int")),
-    };
-    let k = if k < 0 { 0 } else { k as usize };
-    Ok(Value::List(list.into_iter().take(k).collect()))
-}
-
-fn get(args: &[Value]) -> Result<Value, EvalError> {
-    if args.len() != 2 {
-        return Err(EvalError::new("get expects 2 args"));
-    }
-    let map = match &args[0] {
-        Value::Map(m) => m,
-        _ => return Err(EvalError::new("get expects Map")),
-    };
-    let key = match &args[1] {
-        Value::Int(v) => ValueKey::Int(*v),
-        Value::Bool(v) => ValueKey::Bool(*v),
-        _ => return Err(EvalError::new("get expects Int/Bool key")),
-    };
-    map.get(&key)
-        .cloned()
-        .ok_or_else(|| EvalError::new("key not found"))
-}
-```
+Note: you can also pass a prebuilt dylib (`.so`, `.dylib`, `.dll`).
 
 ## Notes
 - Constructors are **Uppercase** and use field syntax: `Node { value, left, right }`

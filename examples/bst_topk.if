@@ -1,0 +1,36 @@
+data Tree = Empty | Node { value, left, right };
+extern fn append(a, b);
+extern fn take_k(xs, k);
+
+fn insert(t, x) =
+  match t {
+    Empty => Node { value: x, left: Empty, right: Empty };
+    Node { value, left, right } =>
+      if x < value {
+        Node { value, left: insert(left, x), right }
+      } else {
+        Node { value, left, right: insert(right, x) }
+      };
+  };
+
+fn to_desc_list(t) =
+  match t {
+    Empty => [];
+    Node { value, left, right } =>
+      append(to_desc_list(right), append([value], to_desc_list(left)));
+  };
+
+fn topk(t, k) =
+  t
+    |> to_desc_list
+    |> take_k(k);
+
+let t0 = Empty;
+let t1 = insert(t0, 5);
+let t2 = insert(t1, 2);
+let t3 = insert(t2, 8);
+let t4 = insert(t3, 1);
+let t5 = insert(t4, 3);
+let t6 = insert(t5, 7);
+
+t6 |> topk(3)

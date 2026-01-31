@@ -36,6 +36,14 @@ impl EvalError {
 
 pub type BuiltinFn = Arc<dyn Fn(&[Value]) -> Result<Value, EvalError> + Send + Sync>;
 
+pub fn register_builtin(
+    builtins: &mut HashMap<String, BuiltinFn>,
+    name: impl Into<String>,
+    func: BuiltinFn,
+) {
+    builtins.insert(name.into(), func);
+}
+
 pub fn eval_program(program: &core::Program) -> Result<Option<Value>, EvalError> {
     eval_program_with_builtins(program, &HashMap::new())
 }

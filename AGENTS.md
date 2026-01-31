@@ -73,4 +73,5 @@ Patterns:
   bind first with `let` if needed.
 
 ## Examples
-- `examples/bst_topk.rs`: BST Top-K with `data` + field destructuring.
+- `examples/bst_topk.if`: BST Top-K DSL source.
+- `extras/bst_topk_extra`: Rust dylib for externs used by bst_topk.
