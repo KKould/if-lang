@@ -2,6 +2,14 @@
 name = "if_lang"
 version = "0.1.0"
 edition = "2024"
+authors = ["Kould <kould2333@gmail.com>"]
+description = "Intent-first functional IR language for LLM-friendly logic drafts"
+documentation = "https://docs.rs/if_lang/latest/if_lang/"
+license = "Apache-2.0"
+repository = "https://github.com/KKould/if-lang.git"
+readme = "README.md"
+keywords = ["language", "compiler", "interpreter", "ir", "llm"]
+categories = ["development-tools", "parser-implementations"]
 
 [dependencies]
 libloading = "0.8"
