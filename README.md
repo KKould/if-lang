@@ -33,6 +33,10 @@ implementation in the target language.
 
 Full syntax reference: [SYNTAX.md](SYNTAX.md).
 
+## Codex skill
+
+This repo includes a Codex skill for IF Lang: [SKILL.md](SKILL.md). Use it to guide IF Lang edits, enforce constraints (externs, parameter order, pipeline style), and keep logic in IF Lang with minimal extras.
+
 ## Example
 - BST Top-K
   - IF: [examples/bst_topk.if](examples/bst_topk.if)
