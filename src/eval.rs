@@ -60,6 +60,68 @@ pub fn register_builtin(
     builtins.insert(name.into(), func);
 }
 
+pub struct Args<'a> {
+    name: &'a str,
+    args: &'a [Value],
+}
+
+macro_rules! args_getter {
+    ($name:ident, $ret:ty, $pattern:pat => $expr:expr, $err:expr) => {
+        pub fn $name(&self, idx: usize) -> Result<$ret, EvalError> {
+            let value = self.value_ref(idx)?;
+            match value {
+                $pattern => Ok($expr),
+                _ => Err(EvalError::new(format!("{} expects {}", self.name, $err))),
+            }
+        }
+    };
+}
+
+impl<'a> Args<'a> {
+    pub fn new(name: &'a str, args: &'a [Value]) -> Self {
+        Self { name, args }
+    }
+
+    pub fn expect_len(&self, expected: usize) -> Result<(), EvalError> {
+        if self.args.len() == expected {
+            Ok(())
+        } else {
+            let suffix = if expected == 1 { "" } else { "s" };
+            Err(EvalError::new(format!(
+                "{} expects {} arg{}",
+                self.name, expected, suffix
+            )))
+        }
+    }
+
+    pub fn value_ref(&self, idx: usize) -> Result<&Value, EvalError> {
+        self.args
+            .get(idx)
+            .ok_or_else(|| EvalError::new(format!("{} missing arg {}", self.name, idx)))
+    }
+
+    args_getter!(int, i64, Value::Int(v) => *v, "Int");
+    args_getter!(bool, bool, Value::Bool(v) => *v, "Bool");
+    args_getter!(str, &str, Value::Str(v) => v.as_str(), "Str");
+    args_getter!(bytes, &[u8], Value::Bytes(v) => v.as_slice(), "Bytes");
+    args_getter!(list, &[Value], Value::List(items) => items.as_slice(), "List");
+    args_getter!(fn_ref, &str, Value::FnRef(v) => v.as_str(), "function");
+}
+
+pub fn register_builtin_args<F>(
+    builtins: &mut HashMap<String, BuiltinFn>,
+    name: impl Into<String>,
+    func: F,
+) where
+    F: for<'a> Fn(Args<'a>, &BuiltinContext) -> Result<Value, EvalError> + Send + Sync + 'static,
+{
+    let name = name.into();
+    let key = name.clone();
+    let wrapper =
+        Arc::new(move |args: &[Value], ctx: &BuiltinContext| func(Args::new(&name, args), ctx));
+    builtins.insert(key, wrapper);
+}
+
 pub fn eval_program(program: &core::Program) -> Result<Option<Value>, EvalError> {
     eval_program_with_builtins(program, &HashMap::new())
 }

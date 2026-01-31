@@ -1,0 +1,223 @@
+extern fn list_len(list);
+extern fn list_get(list, idx);
+extern fn list_set(list, idx, value);
+extern fn list_push(list, value);
+extern fn str_split_ws(s);
+extern fn str_trim_end_char(s, ch);
+extern fn str_to_int(s);
+extern fn assert_eq(a, b);
+
+// Constants
+let tok_len_no_where = 4;
+let tok_len_with_where = 8;
+let tok_table = 3;
+let tok_where_col = 5;
+let tok_where_op = 6;
+let tok_where_val = 7;
+let index_not_found = -1;
+let int_zero = 0;
+let empty_expr = Int { value: 0 };
+
+// AST / Data Model
+data Table = Table { name, columns, rows };
+data Db = Db { tables };
+data Expr = Column { name } | Int { value } | Binary { op, left, right };
+data Query = Query { table, has_where, where_expr };
+data Result = Result { columns, rows };
+
+// Catalog + Storage (row store)
+fn db_open() = Db { tables: [] };
+
+fn table_name(t) = match t {
+  Table { name, columns, rows } => name;
+  _ => "";
+};
+
+fn table_columns(t) = match t {
+  Table { name, columns, rows } => columns;
+  _ => [];
+};
+
+fn table_rows(t) = match t {
+  Table { name, columns, rows } => rows;
+  _ => [];
+};
+
+fn table_with_rows(t, new_rows) = match t {
+  Table { name, columns, rows } => Table { name, columns, rows: new_rows };
+  _ => t;
+};
+
+fn db_create_table(db, name, columns) = match db {
+  Db { tables } => Db { tables: list_push(tables, Table { name, columns, rows: [] }) };
+  _ => db;
+};
+
+fn db_insert(db, name, row) = match db {
+  Db { tables } => Db { tables: insert_into_tables(0, tables, name, row) };
+  _ => db;
+};
+
+fn insert_into_tables(idx, tables, name, row) =
+  if idx >= list_len(tables) { tables }
+  else {
+    if table_name(list_get(tables, idx)) == name {
+      list_set(
+        tables,
+        idx,
+        table_with_rows(
+          list_get(tables, idx),
+          list_push(table_rows(list_get(tables, idx)), row)
+        )
+      )
+    } else {
+      insert_into_tables(idx + 1, tables, name, row)
+    }
+  };
+
+// Query Executor (volcano style over rows)
+fn db_query(db, sql) = match db {
+  Db { tables } => query_tables(0, tables, parse_sql(sql));
+  _ => Result { columns: [], rows: [] };
+};
+
+fn query_tables(idx, tables, query) =
+  if idx >= list_len(tables) { Result { columns: [], rows: [] } }
+  else {
+    if table_name(list_get(tables, idx)) == query_table(query) {
+      execute_query(query, list_get(tables, idx))
+    } else {
+      query_tables(idx + 1, tables, query)
+    }
+  };
+
+fn execute_query(query, table) =
+  if query_has_where(query) {
+    Result {
+      columns: table_columns(table),
+      rows: filter_rows(0, table_rows(table), [], query_where_expr(query), table_columns(table))
+    }
+  } else {
+    Result { columns: table_columns(table), rows: table_rows(table) }
+  };
+
+fn filter_rows(idx, rows, acc, expr, columns) =
+  if idx >= list_len(rows) { acc }
+  else {
+    if eval_pred(expr, columns, list_get(rows, idx)) {
+      filter_rows(idx + 1, rows, list_push(acc, list_get(rows, idx)), expr, columns)
+    } else {
+      filter_rows(idx + 1, rows, acc, expr, columns)
+    }
+  };
+
+fn eval_pred(expr, columns, row) = match expr {
+  Binary { op, left, right } =>
+    compare_values(op, eval_expr_value(left, columns, row), eval_expr_value(right, columns, row));
+  _ => false;
+};
+
+fn eval_expr_value(expr, columns, row) = match expr {
+  Column { name } => column_value(columns, name, row);
+  Int { value } => value;
+  _ => int_zero;
+};
+
+fn column_value(columns, name, row) =
+  if column_index(columns, name) < 0 { int_zero }
+  else { list_get(row, column_index(columns, name)) };
+
+fn column_index(columns, name) =
+  find_col_index(0, columns, name);
+
+fn find_col_index(idx, columns, name) =
+  if idx >= list_len(columns) { index_not_found }
+  else {
+    if list_get(columns, idx) == name { idx }
+    else { find_col_index(idx + 1, columns, name) }
+  };
+
+fn compare_values(op, left, right) =
+  match op {
+    ">" => left > right;
+    ">=" => left >= right;
+    "<" => left < right;
+    "<=" => left <= right;
+    "!=" => left != right;
+    "==" => left == right;
+    "=" => left == right;
+    _ => false;
+  };
+
+// Parser (minimal SQL subset)
+fn parse_sql(sql) =
+  parse_sql_tokens(str_split_ws(str_trim_end_char(sql, ";")));
+
+fn parse_sql_tokens(tokens) =
+  if list_len(tokens) == tok_len_no_where {
+    Query {
+      table: list_get(tokens, tok_table),
+      has_where: false,
+      where_expr: empty_expr
+    }
+  } else {
+    Query {
+      table: list_get(tokens, tok_table),
+      has_where: true,
+      where_expr: parse_where_expr(tokens)
+    }
+  };
+
+fn parse_where_expr(tokens) =
+  Binary {
+    op: list_get(tokens, tok_where_op),
+    left: Column { name: list_get(tokens, tok_where_col) },
+    right: Int { value: str_to_int(list_get(tokens, tok_where_val)) }
+  };
+
+fn query_table(q) = match q {
+  Query { table, has_where, where_expr } => table;
+  _ => "";
+};
+
+fn query_has_where(q) = match q {
+  Query { table, has_where, where_expr } => has_where;
+  _ => false;
+};
+
+fn query_where_expr(q) = match q {
+  Query { table, has_where, where_expr } => where_expr;
+  _ => empty_expr;
+};
+
+// Tests
+let db0 = db_open();
+let db1 = db_create_table(db0, "t1", ["c1", "c2"]);
+let db2 = db_insert(db1, "t1", [1, "alpha"]);
+let db3 = db_insert(db2, "t1", [2, "beta"]);
+let db4 = db_insert(db3, "t1", [3, "gamma"]);
+let db5 = db_insert(db4, "t1", [0, "zero"]);
+
+let q1 = db_query(db5, "select * from t1 where c1 > 1;");
+let expected1 = Result {
+  columns: ["c1", "c2"],
+  rows: [
+    [2, "beta"],
+    [3, "gamma"]
+  ]
+};
+let ok1 = assert_eq(q1, expected1);
+
+let q2 = db_query(db5, "select * from t1;");
+let expected2 = Result {
+  columns: ["c1", "c2"],
+  rows: [
+    [1, "alpha"],
+    [2, "beta"],
+    [3, "gamma"],
+    [0, "zero"]
+  ]
+};
+let ok2 = assert_eq(q2, expected2);
+
+[ok1, ok2]

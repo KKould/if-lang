@@ -81,6 +81,25 @@ mod tests {
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Str(_))));
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Bytes(_))));
     }
+
+    #[test]
+    fn lexes_line_comments() {
+        let source = r#"
+            let x = 1; // comment
+            let y = 2; // another comment
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let let_count = tokens
+            .iter()
+            .filter(|t| matches!(t.kind, TokenKind::KwLet))
+            .count();
+        assert_eq!(let_count, 2);
+        assert!(
+            !tokens
+                .iter()
+                .any(|t| matches!(t.kind, TokenKind::Invalid('/')))
+        );
+    }
 }
 impl<'a> Lexer<'a> {
     pub fn new(input: &'a str) -> Self {
