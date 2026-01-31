@@ -104,13 +104,10 @@ match t {
 - Mini web (IF Lang source): [examples/mini_web.if](examples/mini_web.if)
 - Mini web extra (Rust source): [examples/mini_web_extra.rs](examples/mini_web_extra.rs)
 
-Run with a Rust extra file (auto-compiled to a dylib):
+One-line scripts (requires `cargo install if_lang`):
 ```
-cargo run --bin if_lang -- extra examples/bst_topk_extra.rs examples/bst_topk.if
-```
-Mini web (uses handler function reference):
-```
-cargo run --bin if_lang -- extra examples/mini_web_extra.rs examples/mini_web.if
+./scripts/run_bst_topk.sh
+./scripts/run_mini_web.sh
 ```
 Note: you can also pass a prebuilt dylib (`.so`, `.dylib`, `.dll`).
 
