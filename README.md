@@ -1,5 +1,13 @@
 # IF Lang
 
+<p align="left">
+    <a href="https://crates.io/crates/if_lang/"><img src="https://img.shields.io/crates/v/if_lang.svg"></a>
+    <a href="https://github.com/KKould/if-lang" target="_blank">
+    <img src="https://img.shields.io/github/stars/KKould/if-lang.svg?style=social" alt="github star"/>
+    <img src="https://img.shields.io/github/forks/KKould/if-lang.svg?style=social" alt="github fork"/>
+  </a>
+</p>
+
 An intent-first, constrained general-purpose functional language designed for **clear meaning** and **low token usage**. It favors pure functions, explicit data flow, and no hidden state.
 
 Goal: help LLMs generate minimal detail and clear computational intent, with strict constraints and compile/eval layers ensuring deterministic semantics.
