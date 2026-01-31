@@ -1,15 +1,12 @@
 # IF Lang Overview
 
-This project is an intent-first, constrained general-purpose functional language with a small
-compiler pipeline: **lex/parse -> validate -> lower -> eval**. The language emphasizes clear
-intent, low token usage, and no implicit state or side effects.
+This project is an intent-first, constrained general-purpose functional language with a small compiler pipeline: **lex/parse -> validate -> lower -> eval**. The language emphasizes clear intent, low token usage, and no implicit state or side effects.
 
 ## Core ideas
 - **Pure functions by default**: no implicit state, mutation, or IO.
 - **Intent-first pipelines**: `x |> f(a)` means `f(x, a)` (input becomes the first argument).
 - **Externs are explicit**: any host-provided function must be declared with `extern fn`.
-- **Parameter order constraint**: for each function, the **first appearance order** of parameters
-  in the body must match the signature order (repeats allowed).
+- **Parameter order constraint**: for each function, the **first appearance order** of parameters in the body must match the signature order (repeats allowed).
 - **Match clarity**: `match` is a high-level construct with field destructuring and comparisons.
 
 ## Program structure

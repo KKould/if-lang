@@ -1,14 +1,12 @@
 # IF Lang
 
-An intent-first, constrained general-purpose functional language designed for **clear meaning**
-and **low token usage**. It favors pure functions, explicit data flow, and no hidden state.
+An intent-first, constrained general-purpose functional language designed for **clear meaning** and **low token usage**. It favors pure functions, explicit data flow, and no hidden state.
 
-Goal: help LLMs generate minimal detail and clear computational intent, with strict constraints
-and compile/eval layers ensuring deterministic semantics.
+Goal: help LLMs generate minimal detail and clear computational intent, with strict constraints and compile/eval layers ensuring deterministic semantics.
 
 For the full language notes, see [AGENTS.md](AGENTS.md).
 
-## Why this DSL
+## Why this language
 - **Intent-first**: pipelines (`x |> f(a)`) read like steps.
 - **Pure by default**: no implicit mutation or IO.
 - **Explicit externs**: host-provided functions must be declared.
