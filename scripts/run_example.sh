@@ -11,7 +11,7 @@ extra_rs="${root_dir}/examples/${example}_extra.rs"
 
 if [[ ! -f "${if_file}" ]]; then
   echo "example IF file not found: ${if_file}" >&2
-  echo "available examples: bst_topk, mini_web" >&2
+  echo "available examples: bst_topk, mini_web, mini_sql" >&2
   exit 1
 fi
 

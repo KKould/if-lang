@@ -113,6 +113,7 @@ One-line scripts (requires `cargo install if_lang`):
 ```
 ./scripts/run_bst_topk.sh
 ./scripts/run_mini_web.sh
+./scripts/run_mini_sql.sh
 ```
 Note: you can also pass a prebuilt dylib (`.so`, `.dylib`, `.dll`).
 
