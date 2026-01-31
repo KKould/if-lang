@@ -102,12 +102,22 @@ match t {
 - BST Top-K
   - IF: [examples/bst_topk.if](examples/bst_topk.if)
   - Rust extra: [examples/bst_topk_extra.rs](examples/bst_topk_extra.rs)
+  - Python extra: [examples/bst_topk_extra.py](examples/bst_topk_extra.py)
 - Mini web
   - IF: [examples/mini_web.if](examples/mini_web.if)
   - Rust extra: [examples/mini_web_extra.rs](examples/mini_web_extra.rs)
+  - Python extra: [examples/mini_web_extra.py](examples/mini_web_extra.py)
 - Mini SQL
   - IF: [examples/mini_sql.if](examples/mini_sql.if)
   - Rust extra: [examples/mini_sql_extra.rs](examples/mini_sql_extra.rs)
+  - Python extra: [examples/mini_sql_extra.py](examples/mini_sql_extra.py)
+
+One-line scripts (requires `cargo install if_lang`) — Python extra by default:
+```
+./scripts/run_bst_topk.sh
+./scripts/run_mini_web.sh
+./scripts/run_mini_sql.sh
+```
 
 One-line scripts (requires `cargo install if_lang`):
 ```
@@ -115,7 +125,19 @@ One-line scripts (requires `cargo install if_lang`):
 ./scripts/run_mini_web.sh
 ./scripts/run_mini_sql.sh
 ```
-Note: you can also pass a prebuilt dylib (`.so`, `.dylib`, `.dll`).
+Tip: pass `rust` as the optional parameter to run the Rust extra(e.g. `./scripts/run_mini_sql.sh rust`).
+
+Run directly with extras:
+```
+# Python extra (.py)
+if_lang extra examples/bst_topk_extra.py examples/bst_topk.if
+
+# Rust extra (.rs, compiled to dylib on the fly)
+if_lang extra examples/bst_topk_extra.rs examples/bst_topk.if
+
+# Rust extra (prebuilt dylib)
+if_lang extra path/to/libbst_topk_extra.so examples/bst_topk.if
+```
 
 ## Notes
 - Constructors are **Uppercase** and use field syntax: `Node { value, left, right }`

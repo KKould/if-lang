@@ -4,4 +4,5 @@ pub mod eval;
 pub mod lexer;
 pub mod lower;
 pub mod parser;
+pub mod py_extra;
 pub mod validate;

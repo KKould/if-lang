@@ -2,12 +2,20 @@
 set -euo pipefail
 
 example="${1:-bst_topk}"
+mode="${2:-python}"
+
+mode="$(printf "%s" "${mode}" | tr '[:upper:]' '[:lower:]')"
+if [[ "${mode}" != "python" && "${mode}" != "rust" ]]; then
+  echo "invalid mode: ${mode} (expected python or rust)" >&2
+  exit 1
+fi
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 root_dir="$(cd "${script_dir}/.." && pwd)"
 
 if_file="${root_dir}/examples/${example}.if"
 extra_rs="${root_dir}/examples/${example}_extra.rs"
+extra_py="${root_dir}/examples/${example}_extra.py"
 
 if [[ ! -f "${if_file}" ]]; then
   echo "example IF file not found: ${if_file}" >&2
@@ -15,13 +23,22 @@ if [[ ! -f "${if_file}" ]]; then
   exit 1
 fi
 
-if [[ ! -f "${extra_rs}" ]]; then
-  echo "example extra file not found: ${extra_rs}" >&2
+if ! command -v if_lang >/dev/null 2>&1; then
+  echo "if_lang not found in PATH. Install with: cargo install if_lang" >&2
   exit 1
 fi
 
-if ! command -v if_lang >/dev/null 2>&1; then
-  echo "if_lang not found in PATH. Install with: cargo install if_lang" >&2
+if [[ "${mode}" == "python" ]]; then
+  if [[ ! -f "${extra_py}" ]]; then
+    echo "example extra file not found: ${extra_py}" >&2
+    exit 1
+  fi
+  if_lang extra "${extra_py}" "${if_file}"
+  exit 0
+fi
+
+if [[ ! -f "${extra_rs}" ]]; then
+  echo "example extra file not found: ${extra_rs}" >&2
   exit 1
 fi
 

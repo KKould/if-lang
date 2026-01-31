@@ -67,6 +67,7 @@ Patterns:
 - All functions are pure.
 - Externs must be declared and **registered at runtime**.
 - ADT values are represented as variants with field maps.
+- Extras can be implemented in **Rust** (compiled to dylib) or **Python** (`.py`).
 
 ## Known limitations
 - Constructors are parsed only for **Uppercase** names.
@@ -76,3 +77,9 @@ Patterns:
 ## Examples
 - `examples/bst_topk.if`: BST Top-K IF Lang source.
 - `examples/bst_topk_extra.rs`: Rust extra for externs used by bst_topk.
+- `examples/bst_topk_extra.py`: Python extra for externs used by bst_topk.
+
+## Python extra contract
+- Provide `if_lang_register(registry)` and assign `registry["name"] = func`.
+- Builtins are called as `func(args, ctx)` where `args` is a list of values.
+- `ctx.call_fn(name, args)` can call back into IF functions.

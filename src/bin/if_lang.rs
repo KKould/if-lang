@@ -10,6 +10,7 @@ use if_lang::eval::{BuiltinFn, eval_program_with_builtins};
 use if_lang::lexer::Lexer;
 use if_lang::lower::lower_program;
 use if_lang::parser::parse_program;
+use if_lang::py_extra::{PyExtraHandle, is_python_source, load_python_extra};
 use if_lang::validate::validate_program;
 use libloading::Library;
 
@@ -69,7 +70,7 @@ fn main() {
             let mut builtins = HashMap::new();
             let mut loaded = Vec::new();
             match load_extra(extra_path, &mut builtins) {
-                Ok(lib) => loaded.push(lib),
+                Ok(handle) => loaded.push(handle),
                 Err(err) => {
                     eprintln!("failed to load extra: {err}");
                     std::process::exit(1);
@@ -145,19 +146,28 @@ fn print_usage() {
     eprintln!("Usage:");
     eprintln!("  if_lang check <file>");
     eprintln!("  if_lang run <file>");
-    eprintln!("  if_lang extra <dylib|rs> <file>");
+    eprintln!("  if_lang extra <dylib|rs|py> <file>");
 }
 
 type RegisterFn = unsafe extern "C" fn(*mut HashMap<String, BuiltinFn>);
 
-fn load_extra(path: &str, builtins: &mut HashMap<String, BuiltinFn>) -> io::Result<Library> {
+#[allow(dead_code)]
+enum ExtraHandle {
+    Dylib(Library),
+    Python(PyExtraHandle),
+}
+
+fn load_extra(path: &str, builtins: &mut HashMap<String, BuiltinFn>) -> io::Result<ExtraHandle> {
     let path = Path::new(path);
+    if is_python_source(path) {
+        return load_python_extra(path, builtins).map(ExtraHandle::Python);
+    }
     let dylib_path = if is_rust_source(path) {
         build_extra_dylib(path)?
     } else {
         path.to_path_buf()
     };
-    load_extra_library(&dylib_path, builtins)
+    load_extra_library(&dylib_path, builtins).map(ExtraHandle::Dylib)
 }
 
 fn load_extra_library(
