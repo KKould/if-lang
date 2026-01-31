@@ -31,72 +31,9 @@ implementation in the target language.
 - **Explicit externs**: host-provided functions must be declared.
 - **Strong constraints**: parameter usage order must match signature order.
 
-## Syntax highlights (short)
+## Syntax
 
-Data definitions:
-```
-data Tree = Empty | Node { value, left, right };
-```
-
-Externs:
-```
-extern fn take_k(xs, k) explain { Returns first k items. };
-```
-
-Functions and bindings:
-```
-fn add(x, y) = x + y;
-let n = 10;
-```
-
-Function references:
-```
-fn handle(req) = req;
-extern fn serve(port, handler) explain { Start server. };
-serve(8080, handle)
-```
-
-Constructor and field shorthand:
-```
-Node { value: 1, left: Empty, right: Empty }
-Node { value, left, right }
-```
-
-Lists and maps:
-```
-[1, 2, 3]
-#{ 1: 2, 3: 4 }
-```
-
-Strings and bytes:
-```
-"hello"
-b"hello"
-```
-
-If expression:
-```
-if x < 0 { 0 - x } else { x }
-```
-
-Pipe (intent-first):
-```
-xs |> take_k(2)
-```
-
-Match with compare + destructuring:
-```
-match x {
-  >= 80 => 1;
-  _ => 0;
-}
-
-match t {
-  Node { value, left, right } => value;
-  Empty => 0;
-  _ => 0;
-}
-```
+Full syntax reference: [SYNTAX.md](SYNTAX.md).
 
 ## Example
 - BST Top-K
@@ -113,13 +50,6 @@ match t {
   - Python extra: [examples/mini_sql_extra.py](examples/mini_sql_extra.py)
 
 One-line scripts (requires `cargo install if_lang`) — Python extra by default:
-```
-./scripts/run_bst_topk.sh
-./scripts/run_mini_web.sh
-./scripts/run_mini_sql.sh
-```
-
-One-line scripts (requires `cargo install if_lang`):
 ```
 ./scripts/run_bst_topk.sh
 ./scripts/run_mini_web.sh
