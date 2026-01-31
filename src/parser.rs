@@ -1,5 +1,5 @@
 use crate::ast::surface::{
-    DataDef, DataVariant, ExternFnDef, Expr, FieldPattern, FnDef, Item, LetDef, MatchArm,
+    DataDef, DataVariant, Expr, ExternFnDef, FieldPattern, FnDef, Item, LetDef, MatchArm,
     MatchPattern, PipeTarget, Program,
 };
 use crate::ast::{BinaryOp, UnaryOp};
@@ -393,10 +393,7 @@ impl<'a> Parser<'a> {
             }
             TokenKind::KwIf => self.parse_if_expr(),
             TokenKind::KwMatch => self.parse_match_expr(),
-            TokenKind::Invalid(ch) => Err(self.error_here(&format!(
-                "invalid character '{}'",
-                ch
-            ))),
+            TokenKind::Invalid(ch) => Err(self.error_here(&format!("invalid character '{}'", ch))),
             _ => Err(self.error_here("unexpected token")),
         }
     }
@@ -481,10 +478,7 @@ impl<'a> Parser<'a> {
             self.expect(TokenKind::FatArrow)?;
             let body = self.parse_expr()?;
             arms.push(MatchArm { pattern, body });
-            if matches!(
-                self.peek_kind(),
-                TokenKind::Comma | TokenKind::Semicolon
-            ) {
+            if matches!(self.peek_kind(), TokenKind::Comma | TokenKind::Semicolon) {
                 self.advance();
                 if matches!(self.peek_kind(), TokenKind::RBrace) {
                     break;
@@ -506,9 +500,7 @@ impl<'a> Parser<'a> {
                 self.advance();
                 Ok(MatchPattern::Wildcard)
             }
-            TokenKind::Ident(name)
-                if matches!(self.peek_kind_at(1), Some(TokenKind::LBrace)) =>
-            {
+            TokenKind::Ident(name) if matches!(self.peek_kind_at(1), Some(TokenKind::LBrace)) => {
                 let name = name.clone();
                 self.advance();
                 self.expect(TokenKind::LBrace)?;
@@ -722,7 +714,17 @@ mod tests {
         let tokens = Lexer::new(source).lex_all();
         let program = parse_program(&tokens).expect("parse");
         validate_program(&program).expect("validate");
-        assert!(program.items.iter().any(|item| matches!(item, crate::ast::surface::Item::Data(_))));
-        assert!(program.items.iter().any(|item| matches!(item, crate::ast::surface::Item::Fn(_))));
+        assert!(
+            program
+                .items
+                .iter()
+                .any(|item| matches!(item, crate::ast::surface::Item::Data(_)))
+        );
+        assert!(
+            program
+                .items
+                .iter()
+                .any(|item| matches!(item, crate::ast::surface::Item::Fn(_)))
+        );
     }
 }

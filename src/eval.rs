@@ -9,6 +9,7 @@ pub enum Value {
     Bool(bool),
     Str(String),
     Bytes(Vec<u8>),
+    FnRef(String),
     List(Vec<Value>),
     Map(BTreeMap<ValueKey, Value>),
     Variant {
@@ -38,7 +39,18 @@ impl EvalError {
     }
 }
 
-pub type BuiltinFn = Arc<dyn Fn(&[Value]) -> Result<Value, EvalError> + Send + Sync>;
+pub struct BuiltinContext<'a> {
+    ctx: &'a EvalContext,
+}
+
+impl<'a> BuiltinContext<'a> {
+    pub fn call_fn(&self, name: &str, args: Vec<Value>) -> Result<Value, EvalError> {
+        eval_call(name, args, self.ctx)
+    }
+}
+
+pub type BuiltinFn =
+    Arc<dyn Fn(&[Value], &BuiltinContext) -> Result<Value, EvalError> + Send + Sync>;
 
 pub fn register_builtin(
     builtins: &mut HashMap<String, BuiltinFn>,
@@ -56,7 +68,10 @@ pub fn eval_program_with_builtins(
     program: &core::Program,
     builtins: &HashMap<String, BuiltinFn>,
 ) -> Result<Option<Value>, EvalError> {
-    let mut ctx = EvalContext::default();
+    let mut ctx = EvalContext {
+        builtins: builtins.clone(),
+        ..Default::default()
+    };
     ctx.builtins = builtins.clone();
     for item in &program.items {
         match item {
@@ -160,10 +175,7 @@ fn eval_expr(
                     )));
                 }
             } else {
-                return Err(EvalError::new(format!(
-                    "unknown constructor '{}'",
-                    name
-                )));
+                return Err(EvalError::new(format!("unknown constructor '{}'", name)));
             }
             Ok(Value::Variant {
                 name: name.clone(),
@@ -254,10 +266,10 @@ fn lookup_var(
             });
         }
     }
-    Err(EvalError::new(format!(
-        "unknown variable '{}'",
-        name
-    )))
+    if ctx.funcs.contains_key(name) || ctx.externs.contains(name) {
+        return Ok(Value::FnRef(name.to_string()));
+    }
+    Err(EvalError::new(format!("unknown variable '{}'", name)))
 }
 
 fn eval_unary(op: &crate::ast::UnaryOp, value: Value) -> Result<Value, EvalError> {
@@ -273,11 +285,7 @@ fn eval_unary(op: &crate::ast::UnaryOp, value: Value) -> Result<Value, EvalError
     }
 }
 
-fn eval_binary(
-    op: &crate::ast::BinaryOp,
-    left: Value,
-    right: Value,
-) -> Result<Value, EvalError> {
+fn eval_binary(op: &crate::ast::BinaryOp, left: Value, right: Value) -> Result<Value, EvalError> {
     use crate::ast::BinaryOp::*;
     match op {
         Add => Ok(Value::Int(expect_int(left)? + expect_int(right)?)),
@@ -313,6 +321,7 @@ fn equal_values(left: Value, right: Value) -> Result<bool, EvalError> {
         (Value::Bool(a), Value::Bool(b)) => Ok(a == b),
         (Value::Str(a), Value::Str(b)) => Ok(a == b),
         (Value::Bytes(a), Value::Bytes(b)) => Ok(a == b),
+        (Value::FnRef(a), Value::FnRef(b)) => Ok(a == b),
         (
             Value::Variant {
                 name: a_name,
@@ -323,15 +332,13 @@ fn equal_values(left: Value, right: Value) -> Result<bool, EvalError> {
                 fields: b_fields,
             },
         ) => Ok(a_name == b_name && a_fields == b_fields),
-        _ => Err(EvalError::new("== only supports Int/Bool/Str/Bytes/Variant")),
+        _ => Err(EvalError::new(
+            "== only supports Int/Bool/Str/Bytes/FnRef/Variant",
+        )),
     }
 }
 
-fn eval_call(
-    callee: &str,
-    args: Vec<Value>,
-    ctx: &EvalContext,
-) -> Result<Value, EvalError> {
+fn eval_call(callee: &str, args: Vec<Value>, ctx: &EvalContext) -> Result<Value, EvalError> {
     if let Some(func) = ctx.funcs.get(callee) {
         return eval_user_fn(func, args, ctx);
     }
@@ -342,7 +349,8 @@ fn eval_call(
                 callee
             )));
         }
-        return builtin(&args);
+        let builtin_ctx = BuiltinContext { ctx };
+        return builtin(&args, &builtin_ctx);
     }
     if ctx.externs.contains(callee) {
         return Err(EvalError::new(format!(
@@ -434,7 +442,7 @@ fn match_pattern(
 
 #[cfg(test)]
 mod tests {
-    use super::{eval_program, eval_program_with_builtins, Value};
+    use super::{Value, eval_program, eval_program_with_builtins};
     use crate::lexer::Lexer;
     use crate::lower::lower_program;
     use crate::parser::parse_program;
@@ -503,8 +511,7 @@ mod tests {
         let program = parse_program(&tokens).expect("parse");
         validate_program(&program).expect("validate");
         let core = lower_program(program);
-        let err = eval_program_with_builtins(&core, &HashMap::new())
-            .expect_err("should fail");
+        let err = eval_program_with_builtins(&core, &HashMap::new()).expect_err("should fail");
         assert!(err.message.contains("extern function"));
     }
 
@@ -527,6 +534,20 @@ mod tests {
                 Value::Bytes(b"hi".to_vec())
             ])
         );
+    }
+
+    #[test]
+    fn evals_function_reference() {
+        let source = r#"
+            fn handle(x) = x;
+            handle
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let program = parse_program(&tokens).expect("parse");
+        validate_program(&program).expect("validate");
+        let core = lower_program(program);
+        let value = eval_program(&core).expect("eval").expect("value");
+        assert_eq!(value, Value::FnRef("handle".to_string()));
     }
 }
 

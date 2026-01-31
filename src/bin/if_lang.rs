@@ -6,7 +6,7 @@ use std::path::{Path, PathBuf};
 use std::process::Command;
 use std::time::SystemTime;
 
-use if_lang::eval::{eval_program_with_builtins, BuiltinFn};
+use if_lang::eval::{BuiltinFn, eval_program_with_builtins};
 use if_lang::lexer::Lexer;
 use if_lang::lower::lower_program;
 use if_lang::parser::parse_program;
@@ -24,7 +24,7 @@ fn main() {
 
     let (source, builtins, loaded_libs) = match command.as_str() {
         "check" | "run" => {
-            let path = match args.get(0) {
+            let path = match args.first() {
                 Some(p) => p.as_str(),
                 None => {
                     eprintln!("missing file path");
@@ -43,7 +43,7 @@ fn main() {
             (source, builtins, Vec::new())
         }
         "extra" => {
-            let extra_path = match args.get(0) {
+            let extra_path = match args.first() {
                 Some(p) => p.as_str(),
                 None => {
                     eprintln!("missing extra file path");
@@ -104,26 +104,22 @@ fn main() {
         "check" => {
             println!("ok");
         }
-        "run" => {
-            match eval_program_with_builtins(&core, &builtins) {
-                Ok(Some(value)) => println!("{value:?}"),
-                Ok(None) => println!("ok"),
-                Err(err) => {
-                    eprintln!("eval error: {}", err.message);
-                    std::process::exit(1);
-                }
+        "run" => match eval_program_with_builtins(&core, &builtins) {
+            Ok(Some(value)) => println!("{value:?}"),
+            Ok(None) => println!("ok"),
+            Err(err) => {
+                eprintln!("eval error: {}", err.message);
+                std::process::exit(1);
             }
-        }
-        "extra" => {
-            match eval_program_with_builtins(&core, &builtins) {
-                Ok(Some(value)) => println!("{value:?}"),
-                Ok(None) => println!("ok"),
-                Err(err) => {
-                    eprintln!("eval error: {}", err.message);
-                    std::process::exit(1);
-                }
+        },
+        "extra" => match eval_program_with_builtins(&core, &builtins) {
+            Ok(Some(value)) => println!("{value:?}"),
+            Ok(None) => println!("ok"),
+            Err(err) => {
+                eprintln!("eval error: {}", err.message);
+                std::process::exit(1);
             }
-        }
+        },
         _ => {
             eprintln!("unknown command: {command}");
             print_usage();
@@ -178,7 +174,7 @@ fn load_extra_library(
 }
 
 fn to_io_error(err: libloading::Error) -> io::Error {
-    io::Error::new(io::ErrorKind::Other, err.to_string())
+    io::Error::other(err.to_string())
 }
 
 fn is_rust_source(path: &Path) -> bool {
@@ -203,7 +199,7 @@ fn build_extra_dylib(rs_path: &Path) -> io::Result<PathBuf> {
     let stem = rs_path
         .file_stem()
         .and_then(|s| s.to_str())
-        .ok_or_else(|| io::Error::new(io::ErrorKind::Other, "invalid extra file name"))?;
+        .ok_or_else(|| io::Error::other("invalid extra file name"))?;
     let out_path = out_dir.join(dylib_name(stem));
 
     let status = Command::new("rustc")
@@ -221,10 +217,9 @@ fn build_extra_dylib(rs_path: &Path) -> io::Result<PathBuf> {
         .status()?;
 
     if !status.success() {
-        return Err(io::Error::new(
-            io::ErrorKind::Other,
-            format!("rustc failed with status {status}"),
-        ));
+        return Err(io::Error::other(format!(
+            "rustc failed with status {status}"
+        )));
     }
 
     Ok(out_path)

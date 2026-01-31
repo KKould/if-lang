@@ -120,7 +120,10 @@ pub mod surface {
     pub enum MatchPattern {
         Wildcard,
         Expr(Expr),
-        Compare { op: BinaryOp, expr: Expr },
+        Compare {
+            op: BinaryOp,
+            expr: Expr,
+        },
         Variant {
             name: String,
             fields: Vec<FieldPattern>,
@@ -235,7 +238,10 @@ pub mod core {
     pub enum MatchPattern {
         Wildcard,
         Expr(Expr),
-        Compare { op: BinaryOp, expr: Expr },
+        Compare {
+            op: BinaryOp,
+            expr: Expr,
+        },
         Variant {
             name: String,
             fields: Vec<FieldPattern>,

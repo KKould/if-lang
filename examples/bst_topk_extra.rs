@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use if_lang::eval::{register_builtin, BuiltinFn, EvalError, Value};
+use if_lang::eval::{BuiltinContext, BuiltinFn, EvalError, Value, register_builtin};
 
 #[unsafe(no_mangle)]
 pub extern "C" fn if_lang_register(builtins: *mut HashMap<String, BuiltinFn>) {
@@ -10,7 +10,7 @@ pub extern "C" fn if_lang_register(builtins: *mut HashMap<String, BuiltinFn>) {
     register_builtin(builtins, "take_k", Arc::new(take_k));
 }
 
-fn append(args: &[Value]) -> Result<Value, EvalError> {
+fn append(args: &[Value], _ctx: &BuiltinContext) -> Result<Value, EvalError> {
     if args.len() != 2 {
         return Err(EvalError::new("append expects 2 args"));
     }
@@ -27,7 +27,7 @@ fn append(args: &[Value]) -> Result<Value, EvalError> {
     Ok(Value::List(combined))
 }
 
-fn take_k(args: &[Value]) -> Result<Value, EvalError> {
+fn take_k(args: &[Value], _ctx: &BuiltinContext) -> Result<Value, EvalError> {
     if args.len() != 2 {
         return Err(EvalError::new("take_k expects 2 args"));
     }

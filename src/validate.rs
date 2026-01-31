@@ -65,9 +65,7 @@ fn validate_fn_param_order(def: &surface::FnDef) -> Result<(), Error> {
     let mut last_idx: Option<usize> = None;
     let mut last_param: Option<&str> = None;
     for name in first_seen {
-        let idx = *param_index
-            .get(name)
-            .expect("param must exist in map");
+        let idx = *param_index.get(name).expect("param must exist in map");
         if let Some(prev_idx) = last_idx {
             if idx < prev_idx {
                 let prev = last_param.unwrap_or("<unknown>");
@@ -94,7 +92,10 @@ fn collect_first_seen_params<'a>(
     first_seen: &mut Vec<&'a str>,
 ) {
     match expr {
-        surface::Expr::Int(_) | surface::Expr::Bool(_) | surface::Expr::Str(_) | surface::Expr::Bytes(_) => {}
+        surface::Expr::Int(_)
+        | surface::Expr::Bool(_)
+        | surface::Expr::Str(_)
+        | surface::Expr::Bytes(_) => {}
         surface::Expr::Var(name) => {
             if param_index.contains_key(name.as_str()) && !seen.contains_key(name.as_str()) {
                 seen.insert(name.as_str(), true);
@@ -235,10 +236,7 @@ fn validate_expr(expr: &surface::Expr) -> Result<(), Error> {
                 match &arm.pattern {
                     surface::MatchPattern::Wildcard => {
                         if wildcard_index.is_some() {
-                            return Err(Error::new(
-                                "match may contain only one wildcard arm",
-                                0,
-                            ));
+                            return Err(Error::new("match may contain only one wildcard arm", 0));
                         }
                         wildcard_index = Some(idx);
                     }
@@ -254,10 +252,7 @@ fn validate_expr(expr: &surface::Expr) -> Result<(), Error> {
             }
             if let Some(idx) = wildcard_index {
                 if idx != arms.len() - 1 {
-                    return Err(Error::new(
-                        "match wildcard '_' arm must be last",
-                        0,
-                    ));
+                    return Err(Error::new("match wildcard '_' arm must be last", 0));
                 }
             }
             Ok(())

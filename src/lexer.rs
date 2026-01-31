@@ -402,7 +402,7 @@ impl<'a> Lexer<'a> {
                         return Token {
                             kind: TokenKind::Invalid('\\'),
                             position,
-                        }
+                        };
                     }
                 }
                 continue;
@@ -468,7 +468,7 @@ impl<'a> Lexer<'a> {
                         return Token {
                             kind: TokenKind::Invalid('\\'),
                             position,
-                        }
+                        };
                     }
                 }
                 continue;
@@ -495,9 +495,10 @@ impl<'a> Lexer<'a> {
 
     fn lex_ident_or_keyword(&mut self, position: usize) -> Token {
         let start = self.pos;
-        while self.peek_char_opt().is_some_and(|c| {
-            c.is_ascii_alphanumeric() || c == b'_'
-        }) {
+        while self
+            .peek_char_opt()
+            .is_some_and(|c| c.is_ascii_alphanumeric() || c == b'_')
+        {
             self.pos += 1;
         }
         let text = &self.input[start..self.pos];
@@ -518,7 +519,10 @@ impl<'a> Lexer<'a> {
 
     fn skip_whitespace_and_comments(&mut self) {
         loop {
-            while self.peek_char_opt().is_some_and(|c| c.is_ascii_whitespace()) {
+            while self
+                .peek_char_opt()
+                .is_some_and(|c| c.is_ascii_whitespace())
+            {
                 self.pos += 1;
             }
             if self.peek_char_opt() == Some(b'/') && self.peek_char_opt_at(1) == Some(b'/') {

@@ -41,6 +41,13 @@ fn add(x, y) = x + y;
 let n = 10;
 ```
 
+Function references:
+```
+fn handle(req) = req;
+extern fn serve(port, handler);
+serve(8080, handle)
+```
+
 Constructor and field shorthand:
 ```
 Node { value: 1, left: Empty, right: Empty }
@@ -84,12 +91,18 @@ match t {
 ```
 
 ## Example
-- BST Top-K (DSL source): [examples/bst_topk.if](examples/bst_topk.if)
+- BST Top-K (IF Lang source): [examples/bst_topk.if](examples/bst_topk.if)
 - Extra methods (Rust source): [examples/bst_topk_extra.rs](examples/bst_topk_extra.rs)
+- Mini web (IF Lang source): [examples/mini_web.if](examples/mini_web.if)
+- Mini web extra (Rust source): [examples/mini_web_extra.rs](examples/mini_web_extra.rs)
 
 Run with a Rust extra file (auto-compiled to a dylib):
 ```
 cargo run --bin if_lang -- extra examples/bst_topk_extra.rs examples/bst_topk.if
+```
+Mini web (uses handler function reference):
+```
+cargo run --bin if_lang -- extra examples/mini_web_extra.rs examples/mini_web.if
 ```
 Note: you can also pass a prebuilt dylib (`.so`, `.dylib`, `.dll`).
 

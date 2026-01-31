@@ -1,0 +1,144 @@
+extern fn serve(port, handler);
+extern fn str_join(parts, sep);
+extern fn str_len(s);
+extern fn int_to_str(n);
+
+data Request = Request { method, path, query, raw };
+
+fn join(parts) = str_join(parts, "");
+
+fn reason(status) = match status {
+  200 => "OK";
+  201 => "Created";
+  204 => "No Content";
+  301 => "Moved Permanently";
+  302 => "Found";
+  400 => "Bad Request";
+  401 => "Unauthorized";
+  403 => "Forbidden";
+  404 => "Not Found";
+  405 => "Method Not Allowed";
+  500 => "Internal Server Error";
+  503 => "Service Unavailable";
+  _ => "OK";
+};
+
+fn content_length(body) = int_to_str(str_len(body));
+
+fn http_response(status, reason, content_type, body) = join([
+  "HTTP/1.1 ", int_to_str(status), " ", reason, "\r\n",
+  "Content-Type: ", content_type, "\r\n",
+  "Content-Length: ", content_length(body), "\r\n",
+  "Connection: close\r\n",
+  "\r\n",
+  body
+]);
+
+fn response(status, content_type, body) =
+  http_response(status, reason(status), content_type, body);
+
+fn text(body) = response(200, "text/plain; charset=utf-8", body);
+fn html(body) = response(200, "text/html; charset=utf-8", body);
+fn json(body) = response(200, "application/json; charset=utf-8", body);
+fn not_found() = response(404, "text/plain; charset=utf-8", "not found\n");
+fn method_not_allowed() = response(405, "text/plain; charset=utf-8", "method not allowed\n");
+
+fn link(href, label) = join(["<a href=\"", href, "\">", label, "</a>"]);
+fn h1(body) = join(["<h1>", body, "</h1>"]);
+fn h2(body) = join(["<h2>", body, "</h2>"]);
+fn p(body) = join(["<p>", body, "</p>"]);
+fn code(body) = join(["<code>", body, "</code>"]);
+fn li(body) = join(["<li>", body, "</li>"]);
+fn ul(items) = join(["<ul>", str_join(items, ""), "</ul>"]);
+
+fn nav() = join([
+  "<nav>",
+  link("/", "Home"),
+  " | ",
+  link("/docs", "Docs"),
+  " | ",
+  link("/api", "API"),
+  "</nav>"
+]);
+
+fn layout(title, body) = join([
+  "<!doctype html>\n",
+  "<html><head><meta charset=\"utf-8\">",
+  "<title>", title, "</title>",
+  "<style>body{font-family:sans-serif;margin:40px;}nav{margin-bottom:20px;}code{background:#eee;padding:2px 4px;}</style>",
+  "</head><body>",
+  nav(),
+  body,
+  "</body></html>\n"
+]);
+
+let home_page = layout("IF mini web", join([
+  h1("IF mini web"),
+  p("This page is rendered by IF logic; Rust only handles HTTP I/O."),
+  h2("Highlights"),
+  ul([
+    li("Routes and pages are defined in IF"),
+    li("Full HTTP responses are built in IF"),
+    li("API responses are easy to extend")
+  ])
+]));
+
+let docs_page = layout("Docs", join([
+  h1("Usage"),
+  p("Handler returns a full HTTP response string."),
+  p(join(["Example: ", code("extern fn serve(port, handler);")])),
+  h2("Routing"),
+  ul([
+    li("GET requests match the path"),
+    li("Other methods return 405 by default")
+  ])
+]));
+
+let api_page = layout("API", join([
+  h1("API list"),
+  ul([
+    li(link("/api/info", "/api/info")),
+    li(link("/api/features", "/api/features")),
+    li(link("/api/routes", "/api/routes"))
+  ])
+]));
+
+let api_info = json(join([
+  "{",
+  "\"name\":\"IF mini web\",",
+  "\"version\":\"0.1\",",
+  "\"language\":\"IF Lang\"",
+  "}"
+]));
+
+let api_features = json(join([
+  "{",
+  "\"features\":[\"routes\",\"html\",\"json\",\"bytes\"]",
+  "}"
+]));
+
+let api_routes = json(join([
+  "{",
+  "\"routes\":[\"/\",\"/docs\",\"/api\",\"/api/info\",\"/api/features\",\"/api/routes\",\"/health\",\"/raw\"]",
+  "}"
+]));
+
+fn get_route(path) = match path {
+  "/" => html(home_page);
+  "/docs" => html(docs_page);
+  "/api" => html(api_page);
+  "/api/info" => api_info;
+  "/api/features" => api_features;
+  "/api/routes" => api_routes;
+  "/health" => text("ok\n");
+  "/raw" => response(200, "application/octet-stream", "raw bytes\n");
+  _ => not_found();
+};
+
+fn handle(req) = match req {
+  Request { method, path, query, raw } =>
+    if method == "GET" { get_route(path) } else { method_not_allowed() };
+  _ => response(500, "text/plain; charset=utf-8", "invalid request\n");
+};
+
+let started = serve(8080, handle);

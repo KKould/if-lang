@@ -8,6 +8,7 @@ This project is an intent-first, constrained general-purpose functional language
 - **Externs are explicit**: any host-provided function must be declared with `extern fn`.
 - **Parameter order constraint**: for each function, the **first appearance order** of parameters in the body must match the signature order (repeats allowed).
 - **Match clarity**: `match` is a high-level construct with field destructuring and comparisons.
+- **Agent rule (important)**: keep IF Lang as the core logic expression; implement only the minimal required methods in `extra`.
 
 ## Program structure
 Top-level items must end with `;`:
@@ -38,7 +39,7 @@ let n = 10;
 ```
 
 ### Expressions
-- Literals: `Int`, `Bool`
+- Literals: `Int`, `Bool`, `String`, `Bytes`
 - Lists: `[1, 2, 3]`
 - Maps: `#{ 1: 2, 3: 4 }`
 - Unary: `-x`, `!x`
@@ -73,5 +74,5 @@ Patterns:
   bind first with `let` if needed.
 
 ## Examples
-- `examples/bst_topk.if`: BST Top-K DSL source.
-- `extras/bst_topk_extra`: Rust dylib for externs used by bst_topk.
+- `examples/bst_topk.if`: BST Top-K IF Lang source.
+- `examples/bst_topk_extra.rs`: Rust extra for externs used by bst_topk.
