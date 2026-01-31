@@ -15,8 +15,6 @@ Goal: help LLMs generate minimal detail and clear computational intent, with str
 For the full language notes, see [AGENTS.md](AGENTS.md).
 
 ## Why this language
-> Think of IF Lang as “SQL for logic”, not for data.
-
 This project is built to address three practical pain points when using LLMs for code generation:
 1) unclear expression of intent (high review cost, overgrown scaffolding),
 2) hallucinated or noisy implementation details (diluted intent, extra context),
