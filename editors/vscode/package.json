@@ -1,0 +1,65 @@
+{
+  "name": "if-lang",
+  "displayName": "IF Lang",
+  "description": "Syntax highlighting and diagnostics for IF Lang.",
+  "version": "0.0.1",
+  "publisher": "if-lang",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "activationEvents": [
+    "onLanguage:iflang"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "languages": [
+      {
+        "id": "iflang",
+        "aliases": [
+          "IF Lang",
+          "iflang"
+        ],
+        "extensions": [
+          ".if"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "iflang",
+        "scopeName": "source.iflang",
+        "path": "./syntaxes/iflang.tmLanguage.json"
+      }
+    ],
+    "configuration": {
+      "title": "IF Lang",
+      "properties": {
+        "iflang.cliPath": {
+          "type": "string",
+          "default": "if_lang",
+          "description": "Path to the if_lang CLI executable used for diagnostics."
+        },
+        "iflang.diagnosticsMode": {
+          "type": "string",
+          "enum": [
+            "onSave",
+            "onType",
+            "off"
+          ],
+          "default": "onSave",
+          "description": "When to run if_lang diagnostics."
+        },
+        "iflang.diagnosticsDebounceMs": {
+          "type": "number",
+          "default": 250,
+          "minimum": 0,
+          "description": "Debounce time for onType diagnostics."
+        }
+      }
+    }
+  }
+}

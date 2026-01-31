@@ -121,3 +121,21 @@ Note: you can also pass a prebuilt dylib (`.so`, `.dylib`, `.dll`).
 - Constructors are **Uppercase** and use field syntax: `Node { value, left, right }`
 - `match` supports field destructuring and comparison patterns (e.g. `>= 80`)
 - Extern functions must be **declared** with an `explain { ... }` block and **registered** at runtime
+
+## Editor support
+- VS Code extension (syntax highlighting + diagnostics): `editors/vscode`
+
+### VS Code usage
+1) Build or install the CLI so `if_lang` is available on your PATH (e.g. `cargo install if_lang`).
+2) In VS Code, run “Developer: Install Extension from Location...” and select `editors/vscode`.
+3) Open a `.if` file. Diagnostics run on save by default.
+
+Settings:
+- `iflang.cliPath`: Path to the `if_lang` CLI (default: `if_lang`).
+- `iflang.diagnosticsMode`: `onSave` (default), `onType`, or `off`.
+- `iflang.diagnosticsDebounceMs`: Debounce time (ms) for `onType`.
+
+Features:
+- Syntax highlighting.
+- Diagnostics via `if_lang check`.
+- Go to Definition / Find References (workspace-wide, best-effort).

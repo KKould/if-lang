@@ -1,0 +1,110 @@
+{
+  "scopeName": "source.iflang",
+  "name": "IF Lang",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#bytes" },
+    { "include": "#strings" },
+    { "include": "#numbers" },
+    { "include": "#keywords" },
+    { "include": "#booleans" },
+    { "include": "#types" },
+    { "include": "#operators" },
+    { "include": "#punctuation" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.iflang",
+          "match": "//.*$"
+        }
+      ]
+    },
+    "strings": {
+      "name": "string.quoted.double.iflang",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.iflang",
+          "match": "\\\\(n|r|t|0|\\\\|\"|x[0-9A-Fa-f]{2})"
+        }
+      ]
+    },
+    "bytes": {
+      "name": "string.quoted.double.bytes.iflang",
+      "begin": "b\"",
+      "beginCaptures": {
+        "0": { "name": "storage.type.bytes.iflang" }
+      },
+      "end": "\"",
+      "patterns": [
+        {
+          "name": "constant.character.escape.iflang",
+          "match": "\\\\(n|r|t|0|\\\\|\"|x[0-9A-Fa-f]{2})"
+        }
+      ]
+    },
+    "numbers": {
+      "patterns": [
+        {
+          "name": "constant.numeric.integer.iflang",
+          "match": "\\b[0-9]+\\b"
+        }
+      ]
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "name": "keyword.control.iflang",
+          "match": "\\b(data|extern|fn|let|match|if|else|explain)\\b"
+        }
+      ]
+    },
+    "booleans": {
+      "patterns": [
+        {
+          "name": "constant.language.boolean.iflang",
+          "match": "\\b(true|false)\\b"
+        }
+      ]
+    },
+    "types": {
+      "patterns": [
+        {
+          "name": "entity.name.type.iflang",
+          "match": "\\b[A-Z][A-Za-z0-9_]*\\b"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        {
+          "name": "keyword.operator.pipe.iflang",
+          "match": "\\|>"
+        },
+        {
+          "name": "keyword.operator.arrow.iflang",
+          "match": "=>"
+        },
+        {
+          "name": "keyword.operator.iflang",
+          "match": "==|!=|<=|>=|&&|\\|\\||[+\\-*/%<>=!]"
+        }
+      ]
+    },
+    "punctuation": {
+      "patterns": [
+        {
+          "name": "punctuation.separator.iflang",
+          "match": "[\\(\\)\\[\\]\\{\\},;:]"
+        },
+        {
+          "name": "punctuation.separator.iflang",
+          "match": "[#|]"
+        }
+      ]
+    }
+  }
+}
