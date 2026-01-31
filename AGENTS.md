@@ -5,6 +5,7 @@ This project is an intent-first, constrained general-purpose functional language
 ## Core ideas
 - **Pure functions by default**: no implicit state, mutation, or IO.
 - **Intent-first pipelines**: `x |> f(a)` means `f(x, a)` (input becomes the first argument).
+- **Pipeline style rule**: use `|>` only to flatten nested calls; for simple single-call cases, prefer `f(x)` over `x |> f`.
 - **Externs are explicit**: any host-provided function must be declared with `extern fn` and an `explain { ... }` block.
 - **Parameter order constraint**: for each function, the **first appearance order** of parameters in the body must match the signature order (repeats allowed).
 - **Match clarity**: `match` is a high-level construct with field destructuring and comparisons.

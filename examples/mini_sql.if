@@ -61,13 +61,13 @@ fn db_insert(db, name, row) = match db {
 fn insert_into_tables(idx, tables, name, row) =
   if idx >= list_len(tables) { tables }
   else {
-    if table_name(list_get(tables, idx)) == name {
+    if (tables |> list_get(idx) |> table_name) == name {
       list_set(
         tables,
         idx,
         table_with_rows(
-          list_get(tables, idx),
-          list_push(table_rows(list_get(tables, idx)), row)
+          tables |> list_get(idx),
+          tables |> list_get(idx) |> table_rows |> list_push(row)
         )
       )
     } else {
@@ -77,15 +77,15 @@ fn insert_into_tables(idx, tables, name, row) =
 
 // Query Executor (volcano style over rows)
 fn db_query(db, sql) = match db {
-  Db { tables } => query_tables(0, tables, parse_sql(sql));
+  Db { tables } => query_tables(0, tables, sql |> parse_sql);
   _ => Result { columns: [], rows: [] };
 };
 
 fn query_tables(idx, tables, query) =
   if idx >= list_len(tables) { Result { columns: [], rows: [] } }
   else {
-    if table_name(list_get(tables, idx)) == query_table(query) {
-      execute_query(query, list_get(tables, idx))
+    if (tables |> list_get(idx) |> table_name) == query_table(query) {
+      execute_query(query, tables |> list_get(idx))
     } else {
       query_tables(idx + 1, tables, query)
     }
@@ -95,7 +95,13 @@ fn execute_query(query, table) =
   if query_has_where(query) {
     Result {
       columns: table_columns(table),
-      rows: filter_rows(0, table_rows(table), [], query_where_expr(query), table_columns(table))
+      rows: filter_rows(
+        0,
+        table_rows(table),
+        [],
+        query_where_expr(query),
+        table_columns(table)
+      )
     }
   } else {
     Result { columns: table_columns(table), rows: table_rows(table) }
@@ -104,8 +110,14 @@ fn execute_query(query, table) =
 fn filter_rows(idx, rows, acc, expr, columns) =
   if idx >= list_len(rows) { acc }
   else {
-    if eval_pred(expr, columns, list_get(rows, idx)) {
-      filter_rows(idx + 1, rows, list_push(acc, list_get(rows, idx)), expr, columns)
+    if eval_pred(expr, columns, rows |> list_get(idx)) {
+      filter_rows(
+        idx + 1,
+        rows,
+        list_push(acc, rows |> list_get(idx)),
+        expr,
+        columns
+      )
     } else {
       filter_rows(idx + 1, rows, acc, expr, columns)
     }
@@ -113,7 +125,11 @@ fn filter_rows(idx, rows, acc, expr, columns) =
 
 fn eval_pred(expr, columns, row) = match expr {
   Binary { op, left, right } =>
-    compare_values(op, eval_expr_value(left, columns, row), eval_expr_value(right, columns, row));
+    compare_values(
+      op,
+      eval_expr_value(left, columns, row),
+      eval_expr_value(right, columns, row)
+    );
   _ => false;
 };
 
@@ -125,7 +141,7 @@ fn eval_expr_value(expr, columns, row) = match expr {
 
 fn column_value(columns, name, row) =
   if column_index(columns, name) < 0 { int_zero }
-  else { list_get(row, column_index(columns, name)) };
+  else { list_get(row, columns |> column_index(name)) };
 
 fn column_index(columns, name) =
   find_col_index(0, columns, name);
@@ -151,7 +167,10 @@ fn compare_values(op, left, right) =
 
 // Parser (minimal SQL subset)
 fn parse_sql(sql) =
-  parse_sql_tokens(str_split_ws(str_trim_end_char(sql, ";")));
+  sql
+    |> str_trim_end_char(";")
+    |> str_split_ws
+    |> parse_sql_tokens;
 
 fn parse_sql_tokens(tokens) =
   if list_len(tokens) == tok_len_no_where {
@@ -172,7 +191,7 @@ fn parse_where_expr(tokens) =
   Binary {
     op: list_get(tokens, tok_where_op),
     left: Column { name: list_get(tokens, tok_where_col) },
-    right: Int { value: str_to_int(list_get(tokens, tok_where_val)) }
+    right: Int { value: tokens |> list_get(tok_where_val) |> str_to_int }
   };
 
 fn query_table(q) = match q {
@@ -191,14 +210,15 @@ fn query_where_expr(q) = match q {
 };
 
 // Tests
-let db0 = db_open();
-let db1 = db_create_table(db0, "t1", ["c1", "c2"]);
-let db2 = db_insert(db1, "t1", [1, "alpha"]);
-let db3 = db_insert(db2, "t1", [2, "beta"]);
-let db4 = db_insert(db3, "t1", [3, "gamma"]);
-let db5 = db_insert(db4, "t1", [0, "zero"]);
+let db =
+  db_open()
+    |> db_create_table("t1", ["c1", "c2"])
+    |> db_insert("t1", [1, "alpha"])
+    |> db_insert("t1", [2, "beta"])
+    |> db_insert("t1", [3, "gamma"])
+    |> db_insert("t1", [0, "zero"]);
 
-let q1 = db_query(db5, "select * from t1 where c1 > 1;");
+let q1 = db_query(db, "select * from t1 where c1 > 1;");
 let expected1 = Result {
   columns: ["c1", "c2"],
   rows: [
@@ -208,7 +228,7 @@ let expected1 = Result {
 };
 let ok1 = assert_eq(q1, expected1);
 
-let q2 = db_query(db5, "select * from t1;");
+let q2 = db_query(db, "select * from t1;");
 let expected2 = Result {
   columns: ["c1", "c2"],
   rows: [

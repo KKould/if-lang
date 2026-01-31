@@ -25,12 +25,11 @@ fn topk(t, k) =
     |> to_desc_list
     |> take_k(k);
 
-let t0 = Empty;
-let t1 = insert(t0, 5);
-let t2 = insert(t1, 2);
-let t3 = insert(t2, 8);
-let t4 = insert(t3, 1);
-let t5 = insert(t4, 3);
-let t6 = insert(t5, 7);
-
-t6 |> topk(3)
+Empty
+  |> insert(5)
+  |> insert(2)
+  |> insert(8)
+  |> insert(1)
+  |> insert(3)
+  |> insert(7)
+  |> topk(3)
