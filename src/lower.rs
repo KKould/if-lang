@@ -35,6 +35,7 @@ fn lower_extern_fn(def: surface::ExternFnDef) -> core::ExternFnDef {
     core::ExternFnDef {
         name: def.name,
         params: def.params,
+        explain: def.explain,
     }
 }
 

@@ -112,7 +112,12 @@ impl<'a> Parser<'a> {
         self.expect(TokenKind::LParen)?;
         let params = self.parse_params()?;
         self.expect(TokenKind::RParen)?;
-        Ok(ExternFnDef { name, params })
+        let explain = self.expect_explain_block()?;
+        Ok(ExternFnDef {
+            name,
+            params,
+            explain,
+        })
     }
 
     fn parse_fn(&mut self) -> Result<FnDef, Error> {
@@ -645,6 +650,17 @@ impl<'a> Parser<'a> {
         }
     }
 
+    fn expect_explain_block(&mut self) -> Result<String, Error> {
+        match self.peek_kind() {
+            TokenKind::Explain(text) => {
+                let text = text.clone();
+                self.advance();
+                Ok(text)
+            }
+            _ => Err(self.error_here("extern fn requires explain { ... }")),
+        }
+    }
+
     fn peek(&self) -> &Token {
         &self.tokens[self.pos]
     }
@@ -682,7 +698,7 @@ mod tests {
     #[test]
     fn parses_pipe_style() {
         let source = r#"
-            extern fn add1(x);
+            extern fn add1(x) explain { Adds one. };
             fn abs(x) = if x < 0 { 0 - x } else { x };
             fn grade(x) = match x { _ => x };
             let x = 10;

@@ -55,6 +55,7 @@ pub mod surface {
     pub struct ExternFnDef {
         pub name: String,
         pub params: Vec<String>,
+        pub explain: String,
     }
 
     #[derive(Debug, Clone, PartialEq)]
@@ -177,6 +178,7 @@ pub mod core {
     pub struct ExternFnDef {
         pub name: String,
         pub params: Vec<String>,
+        pub explain: String,
     }
 
     #[derive(Debug, Clone, PartialEq)]

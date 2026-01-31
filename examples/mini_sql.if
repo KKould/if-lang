@@ -1,11 +1,11 @@
-extern fn list_len(list);
-extern fn list_get(list, idx);
-extern fn list_set(list, idx, value);
-extern fn list_push(list, value);
-extern fn str_split_ws(s);
-extern fn str_trim_end_char(s, ch);
-extern fn str_to_int(s);
-extern fn assert_eq(a, b);
+extern fn list_len(list) explain { Returns list length. };
+extern fn list_get(list, idx) explain { Returns list[idx]. };
+extern fn list_set(list, idx, value) explain { Returns list with list[idx] replaced. };
+extern fn list_push(list, value) explain { Returns list with value appended. };
+extern fn str_split_ws(s) explain { Splits string by whitespace. };
+extern fn str_trim_end_char(s, ch) explain { Trims one trailing char if present. };
+extern fn str_to_int(s) explain { Parses string to Int. };
+extern fn assert_eq(a, b) explain { Fails if a != b. };
 
 // Constants
 let tok_len_no_where = 4;

@@ -40,7 +40,7 @@ data Tree = Empty | Node { value, left, right };
 
 Externs:
 ```
-extern fn take_k(xs, k);
+extern fn take_k(xs, k) explain { Returns first k items. };
 ```
 
 Functions and bindings:
@@ -52,7 +52,7 @@ let n = 10;
 Function references:
 ```
 fn handle(req) = req;
-extern fn serve(port, handler);
+extern fn serve(port, handler) explain { Start server. };
 serve(8080, handle)
 ```
 
@@ -99,10 +99,15 @@ match t {
 ```
 
 ## Example
-- BST Top-K (IF Lang source): [examples/bst_topk.if](examples/bst_topk.if)
-- Extra methods (Rust source): [examples/bst_topk_extra.rs](examples/bst_topk_extra.rs)
-- Mini web (IF Lang source): [examples/mini_web.if](examples/mini_web.if)
-- Mini web extra (Rust source): [examples/mini_web_extra.rs](examples/mini_web_extra.rs)
+- BST Top-K
+  - IF: [examples/bst_topk.if](examples/bst_topk.if)
+  - Rust extra: [examples/bst_topk_extra.rs](examples/bst_topk_extra.rs)
+- Mini web
+  - IF: [examples/mini_web.if](examples/mini_web.if)
+  - Rust extra: [examples/mini_web_extra.rs](examples/mini_web_extra.rs)
+- Mini SQL
+  - IF: [examples/mini_sql.if](examples/mini_sql.if)
+  - Rust extra: [examples/mini_sql_extra.rs](examples/mini_sql_extra.rs)
 
 One-line scripts (requires `cargo install if_lang`):
 ```
@@ -114,4 +119,4 @@ Note: you can also pass a prebuilt dylib (`.so`, `.dylib`, `.dll`).
 ## Notes
 - Constructors are **Uppercase** and use field syntax: `Node { value, left, right }`
 - `match` supports field destructuring and comparison patterns (e.g. `>= 80`)
-- Extern functions must be **declared** and **registered** at runtime
+- Extern functions must be **declared** with an `explain { ... }` block and **registered** at runtime

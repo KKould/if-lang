@@ -1,7 +1,7 @@
-extern fn serve(port, handler);
-extern fn str_join(parts, sep);
-extern fn str_len(s);
-extern fn int_to_str(n);
+extern fn serve(port, handler) explain { Start a server and handle requests. };
+extern fn str_join(parts, sep) explain { Join strings with separator. };
+extern fn str_len(s) explain { Returns UTF-8 byte length. };
+extern fn int_to_str(n) explain { Converts Int to Str. };
 
 data Request = Request { method, path, query, raw };
 
@@ -86,7 +86,7 @@ let home_page = layout("IF mini web", join([
 let docs_page = layout("Docs", join([
   h1("Usage"),
   p("Handler returns a full HTTP response string."),
-  p(join(["Example: ", code("extern fn serve(port, handler);")])),
+  p(join(["Example: ", code("extern fn serve(port, handler) explain { Start server. };")])),
   h2("Routing"),
   ul([
     li("GET requests match the path"),

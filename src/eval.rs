@@ -566,7 +566,7 @@ mod tests {
     #[test]
     fn eval_errors_on_unregistered_extern() {
         let source = r#"
-            extern fn foo(x);
+            extern fn foo(x) explain { Test extern. };
             foo(1)
         "#;
         let tokens = Lexer::new(source).lex_all();

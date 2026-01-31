@@ -1,6 +1,6 @@
 data Tree = Empty | Node { value, left, right };
-extern fn append(a, b);
-extern fn take_k(xs, k);
+extern fn append(a, b) explain { Concatenates two lists. };
+extern fn take_k(xs, k) explain { Returns first k items from list. };
 
 fn insert(t, x) =
   match t {

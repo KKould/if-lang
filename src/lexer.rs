@@ -41,6 +41,7 @@ pub enum TokenKind {
     Bang,
     Pipe,
     Hash,
+    Explain(String),
     Invalid(char),
     Eof,
 }
@@ -99,6 +100,17 @@ mod tests {
                 .iter()
                 .any(|t| matches!(t.kind, TokenKind::Invalid('/')))
         );
+    }
+
+    #[test]
+    fn lexes_explain_block() {
+        let source = r#"
+            extern fn foo(x) explain { Adds one. };
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        assert!(tokens.iter().any(|t| {
+            matches!(&t.kind, TokenKind::Explain(text) if text.contains("Adds one."))
+        }));
     }
 }
 impl<'a> Lexer<'a> {
@@ -521,6 +533,9 @@ impl<'a> Lexer<'a> {
             self.pos += 1;
         }
         let text = &self.input[start..self.pos];
+        if text == "explain" {
+            return self.lex_explain_block(position);
+        }
         let kind = match text {
             "extern" => TokenKind::KwExtern,
             "data" => TokenKind::KwData,
@@ -534,6 +549,49 @@ impl<'a> Lexer<'a> {
             _ => TokenKind::Ident(text.to_string()),
         };
         Token { kind, position }
+    }
+
+    fn lex_explain_block(&mut self, position: usize) -> Token {
+        while self
+            .peek_char_opt()
+            .is_some_and(|c| c.is_ascii_whitespace())
+        {
+            self.pos += 1;
+        }
+        if self.peek_char_opt() != Some(b'{') {
+            return Token {
+                kind: TokenKind::Invalid('e'),
+                position,
+            };
+        }
+        self.pos += 1;
+        let start = self.pos;
+        let mut depth = 1usize;
+        while let Some(ch) = self.peek_char_opt() {
+            match ch {
+                b'{' => {
+                    depth += 1;
+                }
+                b'}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        let end = self.pos;
+                        self.pos += 1;
+                        let text = self.input[start..end].trim().to_string();
+                        return Token {
+                            kind: TokenKind::Explain(text),
+                            position,
+                        };
+                    }
+                }
+                _ => {}
+            }
+            self.pos += 1;
+        }
+        Token {
+            kind: TokenKind::Invalid('{'),
+            position,
+        }
     }
 
     fn skip_whitespace_and_comments(&mut self) {

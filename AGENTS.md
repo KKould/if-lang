@@ -5,7 +5,7 @@ This project is an intent-first, constrained general-purpose functional language
 ## Core ideas
 - **Pure functions by default**: no implicit state, mutation, or IO.
 - **Intent-first pipelines**: `x |> f(a)` means `f(x, a)` (input becomes the first argument).
-- **Externs are explicit**: any host-provided function must be declared with `extern fn`.
+- **Externs are explicit**: any host-provided function must be declared with `extern fn` and an `explain { ... }` block.
 - **Parameter order constraint**: for each function, the **first appearance order** of parameters in the body must match the signature order (repeats allowed).
 - **Match clarity**: `match` is a high-level construct with field destructuring and comparisons.
 - **Agent rule (important)**: keep IF Lang as the core logic expression; implement only the minimal required methods in `extra`.
@@ -13,7 +13,7 @@ This project is an intent-first, constrained general-purpose functional language
 ## Program structure
 Top-level items must end with `;`:
 - `data` type declarations
-- `extern fn` declarations
+- `extern fn` declarations (must include `explain { ... }`)
 - `fn` function definitions
 - `let` immutable bindings
 
