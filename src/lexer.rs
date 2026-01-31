@@ -2,6 +2,8 @@
 pub enum TokenKind {
     Ident(String),
     Int(i64),
+    Str(String),
+    Bytes(Vec<u8>),
     KwExtern,
     KwData,
     KwMatch,
@@ -66,6 +68,7 @@ mod tests {
             data Tree = Empty | Node { value, left, right };
             match x { >= 1 => y; _ => z; }
             [1,2] #{ 1: 2 } |> f(a)
+            "hi" b"hi"
         "#;
         let tokens = Lexer::new(source).lex_all();
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::KwData)));
@@ -75,6 +78,8 @@ mod tests {
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::LBracket)));
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Hash)));
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Pipe)));
+        assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Str(_))));
+        assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Bytes(_))));
     }
 }
 impl<'a> Lexer<'a> {
@@ -319,6 +324,8 @@ impl<'a> Lexer<'a> {
                 }
             }
             b'0'..=b'9' => self.lex_number(position),
+            b'"' => self.lex_string(position),
+            b'b' if self.peek_char_opt_at(1) == Some(b'"') => self.lex_bytes(position),
             b'a'..=b'z' | b'A'..=b'Z' | b'_' => self.lex_ident_or_keyword(position),
             _ => {
                 self.pos += 1;
@@ -341,6 +348,149 @@ impl<'a> Lexer<'a> {
             kind: TokenKind::Int(value),
             position,
         }
+    }
+
+    fn lex_string(&mut self, position: usize) -> Token {
+        self.pos += 1;
+        let mut out = String::new();
+        while let Some(ch) = self.peek_char_opt() {
+            if ch == b'"' {
+                self.pos += 1;
+                return Token {
+                    kind: TokenKind::Str(out),
+                    position,
+                };
+            }
+            if ch == b'\\' {
+                self.pos += 1;
+                match self.peek_char_opt() {
+                    Some(b'n') => {
+                        out.push('\n');
+                        self.pos += 1;
+                    }
+                    Some(b'r') => {
+                        out.push('\r');
+                        self.pos += 1;
+                    }
+                    Some(b't') => {
+                        out.push('\t');
+                        self.pos += 1;
+                    }
+                    Some(b'0') => {
+                        out.push('\0');
+                        self.pos += 1;
+                    }
+                    Some(b'\\') => {
+                        out.push('\\');
+                        self.pos += 1;
+                    }
+                    Some(b'"') => {
+                        out.push('"');
+                        self.pos += 1;
+                    }
+                    Some(b'x') => {
+                        if let Some(byte) = self.lex_hex_escape() {
+                            out.push(byte as char);
+                        } else {
+                            return Token {
+                                kind: TokenKind::Invalid('\\'),
+                                position,
+                            };
+                        }
+                    }
+                    _ => {
+                        return Token {
+                            kind: TokenKind::Invalid('\\'),
+                            position,
+                        }
+                    }
+                }
+                continue;
+            }
+            out.push(ch as char);
+            self.pos += 1;
+        }
+        Token {
+            kind: TokenKind::Invalid('"'),
+            position,
+        }
+    }
+
+    fn lex_bytes(&mut self, position: usize) -> Token {
+        self.pos += 2;
+        let mut out = Vec::new();
+        while let Some(ch) = self.peek_char_opt() {
+            if ch == b'"' {
+                self.pos += 1;
+                return Token {
+                    kind: TokenKind::Bytes(out),
+                    position,
+                };
+            }
+            if ch == b'\\' {
+                self.pos += 1;
+                match self.peek_char_opt() {
+                    Some(b'n') => {
+                        out.push(b'\n');
+                        self.pos += 1;
+                    }
+                    Some(b'r') => {
+                        out.push(b'\r');
+                        self.pos += 1;
+                    }
+                    Some(b't') => {
+                        out.push(b'\t');
+                        self.pos += 1;
+                    }
+                    Some(b'0') => {
+                        out.push(b'\0');
+                        self.pos += 1;
+                    }
+                    Some(b'\\') => {
+                        out.push(b'\\');
+                        self.pos += 1;
+                    }
+                    Some(b'"') => {
+                        out.push(b'"');
+                        self.pos += 1;
+                    }
+                    Some(b'x') => {
+                        if let Some(byte) = self.lex_hex_escape() {
+                            out.push(byte);
+                        } else {
+                            return Token {
+                                kind: TokenKind::Invalid('\\'),
+                                position,
+                            };
+                        }
+                    }
+                    _ => {
+                        return Token {
+                            kind: TokenKind::Invalid('\\'),
+                            position,
+                        }
+                    }
+                }
+                continue;
+            }
+            out.push(ch);
+            self.pos += 1;
+        }
+        Token {
+            kind: TokenKind::Invalid('"'),
+            position,
+        }
+    }
+
+    fn lex_hex_escape(&mut self) -> Option<u8> {
+        self.pos += 1;
+        let hi = self.peek_char_opt()?;
+        self.pos += 1;
+        let lo = self.peek_char_opt()?;
+        self.pos += 1;
+        let hi = (hi as char).to_digit(16)?;
+        let lo = (lo as char).to_digit(16)?;
+        Some(((hi << 4) | lo) as u8)
     }
 
     fn lex_ident_or_keyword(&mut self, position: usize) -> Token {

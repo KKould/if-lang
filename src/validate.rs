@@ -94,7 +94,7 @@ fn collect_first_seen_params<'a>(
     first_seen: &mut Vec<&'a str>,
 ) {
     match expr {
-        surface::Expr::Int(_) | surface::Expr::Bool(_) => {}
+        surface::Expr::Int(_) | surface::Expr::Bool(_) | surface::Expr::Str(_) | surface::Expr::Bytes(_) => {}
         surface::Expr::Var(name) => {
             if param_index.contains_key(name.as_str()) && !seen.contains_key(name.as_str()) {
                 seen.insert(name.as_str(), true);
@@ -170,7 +170,11 @@ fn collect_first_seen_params<'a>(
 
 fn validate_expr(expr: &surface::Expr) -> Result<(), Error> {
     match expr {
-        surface::Expr::Int(_) | surface::Expr::Bool(_) | surface::Expr::Var(_) => Ok(()),
+        surface::Expr::Int(_)
+        | surface::Expr::Bool(_)
+        | surface::Expr::Str(_)
+        | surface::Expr::Bytes(_)
+        | surface::Expr::Var(_) => Ok(()),
         surface::Expr::List(items) => {
             for item in items {
                 validate_expr(item)?;

@@ -53,6 +53,12 @@ Lists and maps:
 #{ 1: 2, 3: 4 }
 ```
 
+Strings and bytes:
+```
+"hello"
+b"hello"
+```
+
 If expression:
 ```
 if x < 0 { 0 - x } else { x }

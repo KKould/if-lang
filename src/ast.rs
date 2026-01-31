@@ -73,6 +73,8 @@ pub mod surface {
     pub enum Expr {
         Int(i64),
         Bool(bool),
+        Str(String),
+        Bytes(Vec<u8>),
         List(Vec<Expr>),
         Map(Vec<(Expr, Expr)>),
         Var(String),
@@ -190,6 +192,8 @@ pub mod core {
     pub enum Expr {
         Int(i64),
         Bool(bool),
+        Str(String),
+        Bytes(Vec<u8>),
         List(Vec<Expr>),
         Map(Vec<(Expr, Expr)>),
         Var(String),

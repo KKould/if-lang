@@ -56,6 +56,8 @@ fn lower_expr(expr: surface::Expr) -> core::Expr {
     match expr {
         surface::Expr::Int(value) => core::Expr::Int(value),
         surface::Expr::Bool(value) => core::Expr::Bool(value),
+        surface::Expr::Str(value) => core::Expr::Str(value),
+        surface::Expr::Bytes(value) => core::Expr::Bytes(value),
         surface::Expr::List(items) => {
             core::Expr::List(items.into_iter().map(lower_expr).collect())
         }

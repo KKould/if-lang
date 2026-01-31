@@ -7,6 +7,8 @@ use crate::ast::core;
 pub enum Value {
     Int(i64),
     Bool(bool),
+    Str(String),
+    Bytes(Vec<u8>),
     List(Vec<Value>),
     Map(BTreeMap<ValueKey, Value>),
     Variant {
@@ -19,6 +21,8 @@ pub enum Value {
 pub enum ValueKey {
     Int(i64),
     Bool(bool),
+    Str(String),
+    Bytes(Vec<u8>),
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -104,6 +108,8 @@ fn eval_expr(
     match expr {
         core::Expr::Int(value) => Ok(Value::Int(*value)),
         core::Expr::Bool(value) => Ok(Value::Bool(*value)),
+        core::Expr::Str(value) => Ok(Value::Str(value.clone())),
+        core::Expr::Bytes(value) => Ok(Value::Bytes(value.clone())),
         core::Expr::List(items) => {
             let mut values = Vec::with_capacity(items.len());
             for item in items {
@@ -305,6 +311,8 @@ fn equal_values(left: Value, right: Value) -> Result<bool, EvalError> {
     match (left, right) {
         (Value::Int(a), Value::Int(b)) => Ok(a == b),
         (Value::Bool(a), Value::Bool(b)) => Ok(a == b),
+        (Value::Str(a), Value::Str(b)) => Ok(a == b),
+        (Value::Bytes(a), Value::Bytes(b)) => Ok(a == b),
         (
             Value::Variant {
                 name: a_name,
@@ -315,7 +323,7 @@ fn equal_values(left: Value, right: Value) -> Result<bool, EvalError> {
                 fields: b_fields,
             },
         ) => Ok(a_name == b_name && a_fields == b_fields),
-        _ => Err(EvalError::new("== only supports Int/Bool/Variant")),
+        _ => Err(EvalError::new("== only supports Int/Bool/Str/Bytes/Variant")),
     }
 }
 
@@ -499,6 +507,27 @@ mod tests {
             .expect_err("should fail");
         assert!(err.message.contains("extern function"));
     }
+
+    #[test]
+    fn evals_string_and_bytes_literals() {
+        let source = r#"
+            let s = "hi";
+            let b = b"hi";
+            [s, b]
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let program = parse_program(&tokens).expect("parse");
+        validate_program(&program).expect("validate");
+        let core = lower_program(program);
+        let value = eval_program(&core).expect("eval").expect("value");
+        assert_eq!(
+            value,
+            Value::List(vec![
+                Value::Str("hi".to_string()),
+                Value::Bytes(b"hi".to_vec())
+            ])
+        );
+    }
 }
 
 fn expect_int(value: Value) -> Result<i64, EvalError> {
@@ -519,6 +548,8 @@ fn value_to_key(value: &Value) -> Result<ValueKey, EvalError> {
     match value {
         Value::Int(v) => Ok(ValueKey::Int(*v)),
         Value::Bool(v) => Ok(ValueKey::Bool(*v)),
-        _ => Err(EvalError::new("map keys must be Int or Bool")),
+        Value::Str(v) => Ok(ValueKey::Str(v.clone())),
+        Value::Bytes(v) => Ok(ValueKey::Bytes(v.clone())),
+        _ => Err(EvalError::new("map keys must be Int, Bool, Str, or Bytes")),
     }
 }

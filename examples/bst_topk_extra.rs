@@ -42,3 +42,5 @@ fn take_k(args: &[Value]) -> Result<Value, EvalError> {
     let k = if k < 0 { 0 } else { k as usize };
     Ok(Value::List(list.into_iter().take(k).collect()))
 }
+
+fn main() {}

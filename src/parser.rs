@@ -346,6 +346,16 @@ impl<'a> Parser<'a> {
                 self.advance();
                 Ok(Expr::Int(value))
             }
+            TokenKind::Str(value) => {
+                let value = value.clone();
+                self.advance();
+                Ok(Expr::Str(value))
+            }
+            TokenKind::Bytes(value) => {
+                let value = value.clone();
+                self.advance();
+                Ok(Expr::Bytes(value))
+            }
             TokenKind::KwTrue => {
                 self.advance();
                 Ok(Expr::Bool(true))
@@ -686,13 +696,15 @@ mod tests {
             let x = 10;
             let xs = [1, 2, 3];
             let ys = #{ 1: 2, 3: 4 };
+            let s = "hi";
+            let b = b"hi";
             x |> abs |> add1
         "#;
         let tokens = Lexer::new(source).lex_all();
         let program = parse_program(&tokens).expect("parse");
         validate_program(&program).expect("validate");
         assert!(program.expr.is_some());
-        assert_eq!(program.items.len(), 6);
+        assert_eq!(program.items.len(), 8);
     }
 
     #[test]
