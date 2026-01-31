@@ -1,6 +1,6 @@
 [package]
 name = "if_lang"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 authors = ["Kould <kould2333@gmail.com>"]
 description = "Intent-first functional IR language for LLM-friendly logic drafts"
