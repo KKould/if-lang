@@ -1,18 +1,19 @@
 #![allow(unsafe_op_in_unsafe_fn)]
 
 use crate::eval::{BuiltinContext, BuiltinFn, EvalError, Value, ValueKey, register_builtin};
+use pyo3::DowncastError;
 use pyo3::exceptions::{PyRuntimeError, PyTypeError};
 use pyo3::prelude::*;
 use pyo3::types::{
     PyAny, PyBool, PyByteArray, PyBytes, PyDict, PyInt, PyList, PyModule, PyString, PyTuple,
 };
-use pyo3::DowncastError;
 use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::io;
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::rc::Rc;
 use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct PyExtraHandle {
     _extra: Arc<PyExtra>,
@@ -29,8 +30,10 @@ struct ContextState {
 
 impl ContextState {
     fn new(ctx: &BuiltinContext) -> Self {
+        #[allow(clippy::unnecessary_cast)]
+        let ctx = ctx as *const BuiltinContext as *const BuiltinContext<'static>;
         Self {
-            ctx: ctx as *const BuiltinContext as *const BuiltinContext<'static>,
+            ctx,
             valid: AtomicBool::new(true),
         }
     }
@@ -53,7 +56,7 @@ impl ContextState {
 
 #[pyclass(unsendable)]
 struct PyContext {
-    state: Arc<ContextState>,
+    state: Rc<ContextState>,
 }
 
 #[pymethods]
@@ -82,7 +85,7 @@ impl PyContext {
 #[pyclass(unsendable)]
 struct PyFnRef {
     name: String,
-    state: Arc<ContextState>,
+    state: Rc<ContextState>,
 }
 
 #[pymethods]
@@ -181,10 +184,15 @@ fn call_python_builtin(
     args: &[Value],
     ctx: &BuiltinContext,
 ) -> Result<Value, EvalError> {
-    let state = Arc::new(ContextState::new(ctx));
+    let state = Rc::new(ContextState::new(ctx));
     let result = Python::with_gil(|py| -> Result<Value, EvalError> {
-        let py_ctx = Py::new(py, PyContext { state: state.clone() })
-            .map_err(|err| EvalError::new(format!("python context error: {err}")))?;
+        let py_ctx = Py::new(
+            py,
+            PyContext {
+                state: state.clone(),
+            },
+        )
+        .map_err(|err| EvalError::new(format!("python context error: {err}")))?;
         let mut py_args = Vec::with_capacity(args.len());
         for arg in args {
             let obj = value_to_py(py, arg, &state)
@@ -202,7 +210,7 @@ fn call_python_builtin(
     result
 }
 
-fn value_to_py(py: Python, value: &Value, state: &Arc<ContextState>) -> PyResult<PyObject> {
+fn value_to_py(py: Python, value: &Value, state: &Rc<ContextState>) -> PyResult<PyObject> {
     match value {
         Value::Int(v) => Ok(v.to_object(py)),
         Value::Bool(v) => Ok(v.to_object(py)),
@@ -364,9 +372,7 @@ fn py_to_value_key(obj: &Bound<'_, PyAny>) -> Result<ValueKey, EvalError> {
             .to_vec();
         return Ok(ValueKey::Bytes(value));
     }
-    Err(EvalError::new(
-        "map keys must be Int, Bool, Str, or Bytes",
-    ))
+    Err(EvalError::new("map keys must be Int, Bool, Str, or Bytes"))
 }
 
 fn eval_error_to_py(err: EvalError) -> PyErr {

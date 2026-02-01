@@ -1,4 +1,5 @@
 data Tree = Empty | Node { value, left, right };
+
 extern fn append(a, b) explain { Concatenates two lists. };
 extern fn take_k(xs, k) explain { Returns first k items from list. };
 
@@ -7,17 +8,24 @@ fn insert(t, x) =
     Empty => Node { value: x, left: Empty, right: Empty };
     Node { value, left, right } =>
       if x < value {
-        Node { value, left: insert(left, x), right }
+        Node {
+          value,
+          left: insert(left, x),
+          right,
+        }
       } else {
-        Node { value, left, right: insert(right, x) }
+        Node {
+          value,
+          left,
+          right: insert(right, x),
+        }
       };
   };
 
 fn to_desc_list(t) =
   match t {
     Empty => [];
-    Node { value, left, right } =>
-      append(to_desc_list(right), append([value], to_desc_list(left)));
+    Node { value, left, right } => append(to_desc_list(right), append([value], to_desc_list(left)));
   };
 
 fn topk(t, k) =

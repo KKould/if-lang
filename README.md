@@ -71,6 +71,18 @@ if_lang extra examples/bst_topk_extra.rs examples/bst_topk.if
 if_lang extra path/to/libbst_topk_extra.so examples/bst_topk.if
 ```
 
+Format IF source (rustfmt-style UX):
+```
+# Format in-place
+if_lang fmt examples/bst_topk.if
+
+# Check formatting (non-zero exit if different)
+if_lang fmt --check examples/bst_topk.if
+
+# Format from stdin to stdout
+cat examples/bst_topk.if | if_lang fmt -
+```
+
 ## Notes
 - Constructors are **Uppercase** and use field syntax: `Node { value, left, right }`
 - `match` supports field destructuring and comparison patterns (e.g. `>= 80`)

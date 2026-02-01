@@ -10,6 +10,9 @@ description: Work with IF Lang source, syntax, and compiler pipeline in this rep
 - Functions are pure by default; no implicit state, mutation, or IO.
 - Externs must be explicit: declare with `extern fn` and include `explain { ... }`.
 - Enforce parameter order constraint: the first appearance order of parameters in the body must match the signature order (repeats allowed).
+- Avoid deep `if` nesting; prefer `match` (or a helper fn) when branching grows.
+- Keep all core logic in IF Lang; extras should only provide the minimal necessary operations.
+- Prefer grouping code by responsibility and mark each block with concise comments.
 
 ## Program structure
 - Top-level items must end with `;` (data, extern fn, fn, let).

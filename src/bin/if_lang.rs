@@ -7,6 +7,7 @@ use std::process::Command;
 use std::time::SystemTime;
 
 use if_lang::eval::{BuiltinFn, eval_program_with_builtins};
+use if_lang::format::format_source;
 use if_lang::lexer::Lexer;
 use if_lang::lower::lower_program;
 use if_lang::parser::parse_program;
@@ -23,6 +24,8 @@ fn main() {
 
     let command = args.remove(0);
 
+    let mut fmt_check = false;
+    let mut fmt_path: Option<String> = None;
     let (source, builtins, loaded_libs) = match command.as_str() {
         "check" | "run" => {
             let path = match args.first() {
@@ -78,6 +81,30 @@ fn main() {
             }
             (source, builtins, loaded)
         }
+        "fmt" => {
+            if matches!(args.first().map(|s| s.as_str()), Some("--check")) {
+                fmt_check = true;
+                args.remove(0);
+            }
+            let path = match args.first() {
+                Some(p) => p.as_str(),
+                None => {
+                    eprintln!("missing file path");
+                    print_usage();
+                    std::process::exit(2);
+                }
+            };
+            fmt_path = Some(path.to_string());
+            let source = match read_source(path) {
+                Ok(s) => s,
+                Err(err) => {
+                    eprintln!("failed to read source: {err}");
+                    std::process::exit(1);
+                }
+            };
+            let builtins = HashMap::new();
+            (source, builtins, Vec::new())
+        }
         _ => {
             eprintln!("unknown command: {command}");
             print_usage();
@@ -99,28 +126,52 @@ fn main() {
         std::process::exit(1);
     }
 
-    let core = lower_program(surface);
-
     match command.as_str() {
         "check" => {
             println!("ok");
         }
-        "run" => match eval_program_with_builtins(&core, &builtins) {
-            Ok(Some(value)) => println!("{value:?}"),
-            Ok(None) => println!("ok"),
-            Err(err) => {
-                eprintln!("eval error: {}", err.message);
-                std::process::exit(1);
+        "run" => {
+            let core = lower_program(surface);
+            match eval_program_with_builtins(&core, &builtins) {
+                Ok(Some(value)) => println!("{value:?}"),
+                Ok(None) => println!("ok"),
+                Err(err) => {
+                    eprintln!("eval error: {}", err.message);
+                    std::process::exit(1);
+                }
             }
-        },
-        "extra" => match eval_program_with_builtins(&core, &builtins) {
-            Ok(Some(value)) => println!("{value:?}"),
-            Ok(None) => println!("ok"),
-            Err(err) => {
-                eprintln!("eval error: {}", err.message);
-                std::process::exit(1);
+        }
+        "extra" => {
+            let core = lower_program(surface);
+            match eval_program_with_builtins(&core, &builtins) {
+                Ok(Some(value)) => println!("{value:?}"),
+                Ok(None) => println!("ok"),
+                Err(err) => {
+                    eprintln!("eval error: {}", err.message);
+                    std::process::exit(1);
+                }
             }
-        },
+        }
+        "fmt" => {
+            let formatted = format_source(&source, &surface);
+            let path = fmt_path.as_deref().unwrap_or("-");
+            if fmt_check {
+                if formatted != source {
+                    eprintln!("formatting differs");
+                    std::process::exit(1);
+                }
+                println!("ok");
+                return;
+            }
+            if path == "-" {
+                print!("{formatted}");
+            } else if let Err(err) = fs::write(path, formatted) {
+                eprintln!("failed to write formatted output: {err}");
+                std::process::exit(1);
+            } else {
+                println!("ok");
+            }
+        }
         _ => {
             eprintln!("unknown command: {command}");
             print_usage();
@@ -147,6 +198,7 @@ fn print_usage() {
     eprintln!("  if_lang check <file>");
     eprintln!("  if_lang run <file>");
     eprintln!("  if_lang extra <dylib|rs|py> <file>");
+    eprintln!("  if_lang fmt [--check] <file|->");
 }
 
 type RegisterFn = unsafe extern "C" fn(*mut HashMap<String, BuiltinFn>);

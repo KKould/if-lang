@@ -9,7 +9,10 @@ This project is an intent-first, constrained general-purpose functional language
 - **Externs are explicit**: any host-provided function must be declared with `extern fn` and an `explain { ... }` block.
 - **Parameter order constraint**: for each function, the **first appearance order** of parameters in the body must match the signature order (repeats allowed).
 - **Match clarity**: `match` is a high-level construct with field destructuring and comparisons.
+- **Avoid deep if nesting**: when branching gets multi-level, prefer `match` (or a helper fn) to keep intent clear.
 - **Agent rule (important)**: keep IF Lang as the core logic expression; implement only the minimal required methods in `extra`.
+- **Logic placement**: all core logic must live in IF Lang; extras provide only the minimal necessary operations.
+- **Structure**: group code by responsibility and mark sections with concise comments.
 
 ## Program structure
 Top-level items must end with `;`:
