@@ -60,6 +60,10 @@ fn lower_expr(expr: surface::Expr) -> core::Expr {
         surface::Expr::Str(value) => core::Expr::Str(value),
         surface::Expr::Bytes(value) => core::Expr::Bytes(value),
         surface::Expr::List(items) => core::Expr::List(items.into_iter().map(lower_expr).collect()),
+        surface::Expr::RangeList { start, end } => core::Expr::RangeList {
+            start: Box::new(lower_expr(*start)),
+            end: Box::new(lower_expr(*end)),
+        },
         surface::Expr::Map(entries) => core::Expr::Map(
             entries
                 .into_iter()
@@ -73,6 +77,17 @@ fn lower_expr(expr: surface::Expr) -> core::Expr {
                 .into_iter()
                 .map(|(field, expr)| (field, lower_expr(expr)))
                 .collect(),
+        },
+        surface::Expr::For {
+            name,
+            iter,
+            guard,
+            body,
+        } => core::Expr::For {
+            name,
+            iter: Box::new(lower_expr(*iter)),
+            guard: guard.map(|expr| Box::new(lower_expr(*expr))),
+            body: Box::new(lower_expr(*body)),
         },
         surface::Expr::Unary { op, expr } => core::Expr::Unary {
             op,

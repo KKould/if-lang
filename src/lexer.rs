@@ -9,6 +9,7 @@ pub enum TokenKind {
     KwMatch,
     KwFn,
     KwLet,
+    KwFor,
     KwIf,
     KwElse,
     KwTrue,
@@ -41,6 +42,7 @@ pub enum TokenKind {
     Bang,
     Pipe,
     Hash,
+    DotDot,
     Explain(String),
     Invalid(char),
     Eof,
@@ -68,12 +70,14 @@ mod tests {
         let source = r#"
             data Tree = Empty | Node { value, left, right };
             match x { >= 1 => y; _ => z; }
-            [1,2] #{ 1: 2 } |> f(a)
+            for x in xs { x }
+            [1,2] [1..3] #{ 1: 2 } |> f(a)
             "hi" b"hi"
         "#;
         let tokens = Lexer::new(source).lex_all();
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::KwData)));
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::KwMatch)));
+        assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::KwFor)));
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::FatArrow)));
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Bar)));
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::LBracket)));
@@ -271,6 +275,21 @@ impl<'a> Lexer<'a> {
                 Token {
                     kind: TokenKind::Hash,
                     position,
+                }
+            }
+            b'.' => {
+                self.pos += 1;
+                if self.peek_char_opt() == Some(b'.') {
+                    self.pos += 1;
+                    Token {
+                        kind: TokenKind::DotDot,
+                        position,
+                    }
+                } else {
+                    Token {
+                        kind: TokenKind::Invalid('.'),
+                        position,
+                    }
                 }
             }
             b'!' => {
@@ -542,6 +561,7 @@ impl<'a> Lexer<'a> {
             "match" => TokenKind::KwMatch,
             "fn" => TokenKind::KwFn,
             "let" => TokenKind::KwLet,
+            "for" => TokenKind::KwFor,
             "if" => TokenKind::KwIf,
             "else" => TokenKind::KwElse,
             "true" => TokenKind::KwTrue,

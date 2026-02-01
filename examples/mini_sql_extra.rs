@@ -6,7 +6,6 @@ pub extern "C" fn if_lang_register(builtins: *mut HashMap<String, BuiltinFn>) {
     let builtins = unsafe { &mut *builtins };
     register_builtin_args(builtins, "list_len", list_len);
     register_builtin_args(builtins, "list_get", list_get);
-    register_builtin_args(builtins, "list_set", list_set);
     register_builtin_args(builtins, "list_push", list_push);
     register_builtin_args(builtins, "str_split_ws", str_split_ws);
     register_builtin_args(builtins, "str_trim_end_char", str_trim_end_char);
@@ -28,18 +27,6 @@ fn list_get(args: Args<'_>, _ctx: &BuiltinContext) -> Result<Value, EvalError> {
         return Err(EvalError::new("list_get index out of bounds"));
     }
     Ok(items[idx as usize].clone())
-}
-
-fn list_set(args: Args<'_>, _ctx: &BuiltinContext) -> Result<Value, EvalError> {
-    args.expect_len(3)?;
-    let items = args.list(0)?.to_vec();
-    let idx = args.int(1)?;
-    if idx < 0 || idx as usize >= items.len() {
-        return Err(EvalError::new("list_set index out of bounds"));
-    }
-    let mut out = items;
-    out[idx as usize] = args.value_ref(2)?.clone();
-    Ok(Value::List(out))
 }
 
 fn list_push(args: Args<'_>, _ctx: &BuiltinContext) -> Result<Value, EvalError> {

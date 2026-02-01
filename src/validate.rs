@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::ast::surface;
 use crate::error::Error;
@@ -60,7 +60,13 @@ fn validate_fn_param_order(def: &surface::FnDef) -> Result<(), Error> {
 
     let mut seen = HashMap::new();
     let mut first_seen: Vec<&str> = Vec::new();
-    collect_first_seen_params(&def.body, &param_index, &mut seen, &mut first_seen);
+    collect_first_seen_params(
+        &def.body,
+        &param_index,
+        &mut seen,
+        &mut first_seen,
+        &HashSet::new(),
+    );
 
     let mut last_idx: Option<usize> = None;
     let mut last_param: Option<&str> = None;
@@ -90,6 +96,7 @@ fn collect_first_seen_params<'a>(
     param_index: &HashMap<&'a str, usize>,
     seen: &mut HashMap<&'a str, bool>,
     first_seen: &mut Vec<&'a str>,
+    shadowed: &HashSet<&'a str>,
 ) {
     match expr {
         surface::Expr::Int(_)
@@ -97,73 +104,106 @@ fn collect_first_seen_params<'a>(
         | surface::Expr::Str(_)
         | surface::Expr::Bytes(_) => {}
         surface::Expr::Var(name) => {
-            if param_index.contains_key(name.as_str()) && !seen.contains_key(name.as_str()) {
+            if param_index.contains_key(name.as_str())
+                && !seen.contains_key(name.as_str())
+                && !shadowed.contains(name.as_str())
+            {
                 seen.insert(name.as_str(), true);
                 first_seen.push(name.as_str());
             }
         }
         surface::Expr::List(items) => {
             for item in items {
-                collect_first_seen_params(item, param_index, seen, first_seen);
+                collect_first_seen_params(item, param_index, seen, first_seen, shadowed);
             }
+        }
+        surface::Expr::RangeList { start, end } => {
+            collect_first_seen_params(start, param_index, seen, first_seen, shadowed);
+            collect_first_seen_params(end, param_index, seen, first_seen, shadowed);
         }
         surface::Expr::Map(entries) => {
             for (key, value) in entries {
-                collect_first_seen_params(key, param_index, seen, first_seen);
-                collect_first_seen_params(value, param_index, seen, first_seen);
+                collect_first_seen_params(key, param_index, seen, first_seen, shadowed);
+                collect_first_seen_params(value, param_index, seen, first_seen, shadowed);
             }
         }
         surface::Expr::Construct { fields, .. } => {
             for (_, expr) in fields {
-                collect_first_seen_params(expr, param_index, seen, first_seen);
+                collect_first_seen_params(expr, param_index, seen, first_seen, shadowed);
             }
         }
+        surface::Expr::For {
+            name,
+            iter,
+            guard,
+            body,
+        } => {
+            collect_first_seen_params(iter, param_index, seen, first_seen, shadowed);
+            let mut inner_shadowed = shadowed.clone();
+            inner_shadowed.insert(name.as_str());
+            if let Some(guard) = guard {
+                collect_first_seen_params(guard, param_index, seen, first_seen, &inner_shadowed);
+            }
+            collect_first_seen_params(body, param_index, seen, first_seen, &inner_shadowed);
+        }
         surface::Expr::Unary { expr, .. } => {
-            collect_first_seen_params(expr, param_index, seen, first_seen);
+            collect_first_seen_params(expr, param_index, seen, first_seen, shadowed);
         }
         surface::Expr::Binary { left, right, .. } => {
-            collect_first_seen_params(left, param_index, seen, first_seen);
-            collect_first_seen_params(right, param_index, seen, first_seen);
+            collect_first_seen_params(left, param_index, seen, first_seen, shadowed);
+            collect_first_seen_params(right, param_index, seen, first_seen, shadowed);
         }
         surface::Expr::If {
             cond,
             then_branch,
             else_branch,
         } => {
-            collect_first_seen_params(cond, param_index, seen, first_seen);
-            collect_first_seen_params(then_branch, param_index, seen, first_seen);
-            collect_first_seen_params(else_branch, param_index, seen, first_seen);
+            collect_first_seen_params(cond, param_index, seen, first_seen, shadowed);
+            collect_first_seen_params(then_branch, param_index, seen, first_seen, shadowed);
+            collect_first_seen_params(else_branch, param_index, seen, first_seen, shadowed);
         }
         surface::Expr::Call { args, .. } => {
             for arg in args {
-                collect_first_seen_params(arg, param_index, seen, first_seen);
+                collect_first_seen_params(arg, param_index, seen, first_seen, shadowed);
             }
         }
         surface::Expr::Pipe { input, target } => {
-            collect_first_seen_params(input, param_index, seen, first_seen);
+            collect_first_seen_params(input, param_index, seen, first_seen, shadowed);
             match target {
                 surface::PipeTarget::Ident(_) => {}
                 surface::PipeTarget::Call { args, .. } => {
                     for arg in args {
-                        collect_first_seen_params(arg, param_index, seen, first_seen);
+                        collect_first_seen_params(arg, param_index, seen, first_seen, shadowed);
                     }
                 }
             }
         }
         surface::Expr::Match { scrutinee, arms } => {
-            collect_first_seen_params(scrutinee, param_index, seen, first_seen);
+            collect_first_seen_params(scrutinee, param_index, seen, first_seen, shadowed);
             for arm in arms {
                 match &arm.pattern {
                     surface::MatchPattern::Wildcard => {}
                     surface::MatchPattern::Expr(expr) => {
-                        collect_first_seen_params(expr, param_index, seen, first_seen);
+                        collect_first_seen_params(expr, param_index, seen, first_seen, shadowed);
                     }
                     surface::MatchPattern::Compare { expr, .. } => {
-                        collect_first_seen_params(expr, param_index, seen, first_seen);
+                        collect_first_seen_params(expr, param_index, seen, first_seen, shadowed);
                     }
                     surface::MatchPattern::Variant { .. } => {}
                 }
-                collect_first_seen_params(&arm.body, param_index, seen, first_seen);
+                let mut arm_shadowed = shadowed.clone();
+                collect_pattern_binds(&arm.pattern, &mut arm_shadowed);
+                collect_first_seen_params(&arm.body, param_index, seen, first_seen, &arm_shadowed);
+            }
+        }
+    }
+}
+
+fn collect_pattern_binds<'a>(pattern: &'a surface::MatchPattern, shadowed: &mut HashSet<&'a str>) {
+    if let surface::MatchPattern::Variant { fields, .. } = pattern {
+        for field in fields {
+            if let Some(bind) = &field.bind {
+                shadowed.insert(bind.as_str());
             }
         }
     }
@@ -182,6 +222,11 @@ fn validate_expr(expr: &surface::Expr) -> Result<(), Error> {
             }
             Ok(())
         }
+        surface::Expr::RangeList { start, end } => {
+            validate_expr(start)?;
+            validate_expr(end)?;
+            Ok(())
+        }
         surface::Expr::Map(entries) => {
             for (key, value) in entries {
                 validate_expr(key)?;
@@ -193,6 +238,16 @@ fn validate_expr(expr: &surface::Expr) -> Result<(), Error> {
             for (_, expr) in fields {
                 validate_expr(expr)?;
             }
+            Ok(())
+        }
+        surface::Expr::For {
+            iter, guard, body, ..
+        } => {
+            validate_expr(iter)?;
+            if let Some(guard) = guard {
+                validate_expr(guard)?;
+            }
+            validate_expr(body)?;
             Ok(())
         }
         surface::Expr::Unary { expr, .. } => validate_expr(expr),

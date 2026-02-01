@@ -260,6 +260,7 @@ impl Formatter {
         match expr {
             Expr::Match { .. } => self.fmt_match_expr(expr),
             Expr::If { .. } => self.fmt_if_expr(expr),
+            Expr::For { .. } => self.fmt_for_expr(expr),
             Expr::Pipe { .. } => self.fmt_pipe_expr(expr),
             _ => {
                 self.write_indent();
@@ -317,6 +318,37 @@ impl Formatter {
         self.indent += 1;
         self.emit_comments(self.indent);
         self.fmt_expr_stmt(else_branch);
+        self.newline();
+        self.indent -= 1;
+        self.emit_comments(self.indent + 1);
+        self.write_indent();
+        self.out.push('}');
+    }
+
+    fn fmt_for_expr(&mut self, expr: &Expr) {
+        let Expr::For {
+            name,
+            iter,
+            guard,
+            body,
+        } = expr
+        else {
+            return;
+        };
+        self.write_indent();
+        self.out.push_str("for ");
+        self.out.push_str(name);
+        self.out.push_str(" in ");
+        self.out.push_str(&format_expr_inline_flat(iter));
+        if let Some(guard) = guard {
+            self.out.push_str(" if ");
+            self.out.push_str(&format_expr_inline_flat(guard));
+        }
+        self.out.push_str(" {");
+        self.newline();
+        self.indent += 1;
+        self.emit_comments(self.indent);
+        self.fmt_expr_stmt(body);
         self.newline();
         self.indent -= 1;
         self.emit_comments(self.indent + 1);
@@ -442,7 +474,7 @@ impl Formatter {
 fn expr_is_block(expr: &Expr) -> bool {
     matches!(
         expr,
-        Expr::Match { .. } | Expr::If { .. } | Expr::Pipe { .. }
+        Expr::Match { .. } | Expr::If { .. } | Expr::For { .. } | Expr::Pipe { .. }
     )
 }
 
@@ -510,9 +542,30 @@ fn format_expr_inline_prec(
         Expr::Str(value) => format!("\"{}\"", escape_string(value)),
         Expr::Bytes(value) => format!("b\"{}\"", escape_bytes(value)),
         Expr::List(items) => format_list(items, indent, allow_multiline),
+        Expr::RangeList { start, end } => format!(
+            "[{}..{}]",
+            format_expr_inline_flat(start),
+            format_expr_inline_flat(end)
+        ),
         Expr::Map(entries) => format_map(entries, indent, allow_multiline),
         Expr::Var(name) => name.clone(),
         Expr::Construct { name, fields } => format_construct(name, fields, indent, allow_multiline),
+        Expr::For {
+            name,
+            iter,
+            guard,
+            body,
+        } => {
+            let mut out = format!("for {} in {}", name, format_expr_inline_flat(iter));
+            if let Some(guard) = guard {
+                out.push_str(" if ");
+                out.push_str(&format_expr_inline_flat(guard));
+            }
+            out.push_str(" { ");
+            out.push_str(&format_expr_inline_flat(body));
+            out.push_str(" }");
+            out
+        }
         Expr::Unary { op, expr } => {
             let inner = format_expr_inline_prec(expr, PREC_UNARY, false, indent, allow_multiline);
             format!("{}{}", unary_op_str(op), inner)
@@ -1161,5 +1214,43 @@ mod tests {
         let formatted = format_source(source, &program);
         assert!(formatted.contains("// top level"));
         assert!(formatted.contains("// trailing"));
+    }
+
+    #[test]
+    fn formats_for_expr() {
+        let source = r#"
+            fn inc(x) = x + 1;
+            for x in [1, 2] { inc(x) }
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let program = parse_program(&tokens).expect("parse");
+        validate_program(&program).expect("validate");
+        let formatted = format_program(&program);
+        assert!(formatted.contains("for x in [1, 2] {"));
+        assert!(formatted.contains("inc(x)"));
+    }
+
+    #[test]
+    fn formats_for_with_guard() {
+        let source = r#"
+            for x in [1, 2, 3] if x > 1 { x }
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let program = parse_program(&tokens).expect("parse");
+        validate_program(&program).expect("validate");
+        let formatted = format_program(&program);
+        assert!(formatted.contains("for x in [1, 2, 3] if x > 1 {"));
+    }
+
+    #[test]
+    fn formats_range_list() {
+        let source = r#"
+            [1..10]
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let program = parse_program(&tokens).expect("parse");
+        validate_program(&program).expect("validate");
+        let formatted = format_program(&program);
+        assert!(formatted.contains("[1..10]"));
     }
 }

@@ -14,17 +14,6 @@ def list_get(args, ctx):
     return items[idx]
 
 
-def list_set(args, ctx):
-    if len(args) != 3:
-        raise Exception("list_set expects 3 args")
-    items = list(args[0])
-    idx = int(args[1])
-    if idx < 0 or idx >= len(items):
-        raise Exception("list_set index out of bounds")
-    items[idx] = args[2]
-    return items
-
-
 def list_push(args, ctx):
     if len(args) != 2:
         raise Exception("list_push expects 2 args")
@@ -73,7 +62,6 @@ def assert_eq(args, ctx):
 def if_lang_register(registry):
     registry["list_len"] = list_len
     registry["list_get"] = list_get
-    registry["list_set"] = list_set
     registry["list_push"] = list_push
     registry["str_split_ws"] = str_split_ws
     registry["str_trim_end_char"] = str_trim_end_char

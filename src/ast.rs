@@ -77,11 +77,21 @@ pub mod surface {
         Str(String),
         Bytes(Vec<u8>),
         List(Vec<Expr>),
+        RangeList {
+            start: Box<Expr>,
+            end: Box<Expr>,
+        },
         Map(Vec<(Expr, Expr)>),
         Var(String),
         Construct {
             name: String,
             fields: Vec<(String, Expr)>,
+        },
+        For {
+            name: String,
+            iter: Box<Expr>,
+            guard: Option<Box<Expr>>,
+            body: Box<Expr>,
         },
         Unary {
             op: UnaryOp,
@@ -200,11 +210,21 @@ pub mod core {
         Str(String),
         Bytes(Vec<u8>),
         List(Vec<Expr>),
+        RangeList {
+            start: Box<Expr>,
+            end: Box<Expr>,
+        },
         Map(Vec<(Expr, Expr)>),
         Var(String),
         Construct {
             name: String,
             fields: Vec<(String, Expr)>,
+        },
+        For {
+            name: String,
+            iter: Box<Expr>,
+            guard: Option<Box<Expr>>,
+            body: Box<Expr>,
         },
         Unary {
             op: UnaryOp,

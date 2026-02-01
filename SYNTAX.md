@@ -22,7 +22,7 @@ Identifiers:
 - `explain` is reserved (cannot be used as an identifier).
 
 Keywords:
-- `data`, `extern`, `fn`, `let`, `match`, `if`, `else`, `true`, `false`, `explain`
+- `data`, `extern`, `fn`, `let`, `for`, `match`, `if`, `else`, `true`, `false`, `explain`
 
 ## Literals
 
@@ -108,8 +108,10 @@ primary     = literal
            | construct
            | "(" expr ")"
            | if_expr
-           | match_expr ;
+           | match_expr
+           | for_expr ;
 args        = expr { "," expr } ;
+range_list  = expr ".." expr ;
 ```
 
 ### Variables
@@ -122,8 +124,10 @@ handle_request
 ```
 [1, 2, 3]
 []
+[1..10]
 ```
 - Trailing comma is allowed: `[1, 2, ]`.
+- `[start..end]` is a range list (both ends inclusive).
 
 ### Maps
 ```
@@ -180,6 +184,20 @@ match x {
 - Arms may be separated by `;` or `,`.
 - A trailing `;` or `,` before `}` is allowed.
 - `_` may appear at most once and must be last.
+
+### For expression
+```
+for x in xs { f(x) }
+for x in xs if cond { f(x) }
+```
+- Evaluates `xs` (must be a `List`) and returns a list of the body results.
+- The loop variable is scoped to the body expression.
+- Guard expression (`if cond`) must evaluate to `Bool`; if false, the element is skipped.
+
+Grammar:
+```
+for_expr = "for" Ident "in" expr ["if" expr] "{" expr "}" ;
+```
 
 ## Match patterns
 

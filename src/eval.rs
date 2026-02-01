@@ -194,6 +194,25 @@ fn eval_expr(
             }
             Ok(Value::List(values))
         }
+        core::Expr::RangeList { start, end } => {
+            let start_value = eval_expr(start, ctx, locals)?;
+            let end_value = eval_expr(end, ctx, locals)?;
+            let start = expect_int(start_value)?;
+            let end = expect_int(end_value)?;
+            if start > end {
+                return Ok(Value::List(Vec::new()));
+            }
+            let mut out = Vec::new();
+            let mut current = start;
+            loop {
+                out.push(Value::Int(current));
+                if current == end {
+                    break;
+                }
+                current += 1;
+            }
+            Ok(Value::List(out))
+        }
         core::Expr::Map(entries) => {
             let mut map = BTreeMap::new();
             for (key_expr, value_expr) in entries {
@@ -243,6 +262,31 @@ fn eval_expr(
                 name: name.clone(),
                 fields: evaluated,
             })
+        }
+        core::Expr::For {
+            name,
+            iter,
+            guard,
+            body,
+        } => {
+            let iterable = eval_expr(iter, ctx, locals)?;
+            let items = match iterable {
+                Value::List(items) => items,
+                _ => return Err(EvalError::new("for expects List")),
+            };
+            let mut out = Vec::with_capacity(items.len());
+            for item in items {
+                let mut new_locals = locals.clone();
+                new_locals.insert(name.clone(), item);
+                if let Some(guard_expr) = guard {
+                    let guard_value = eval_expr(guard_expr, ctx, &new_locals)?;
+                    if !expect_bool(guard_value)? {
+                        continue;
+                    }
+                }
+                out.push(eval_expr(body, ctx, &new_locals)?);
+            }
+            Ok(Value::List(out))
         }
         core::Expr::Unary { op, expr } => {
             let value = eval_expr(expr, ctx, locals)?;
@@ -610,6 +654,56 @@ mod tests {
         let core = lower_program(program);
         let value = eval_program(&core).expect("eval").expect("value");
         assert_eq!(value, Value::FnRef("handle".to_string()));
+    }
+
+    #[test]
+    fn evals_for_expr() {
+        let source = r#"
+            for x in [1, 2, 3] { x + 1 }
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let program = parse_program(&tokens).expect("parse");
+        validate_program(&program).expect("validate");
+        let core = lower_program(program);
+        let value = eval_program(&core).expect("eval").expect("value");
+        assert_eq!(
+            value,
+            Value::List(vec![Value::Int(2), Value::Int(3), Value::Int(4)])
+        );
+    }
+
+    #[test]
+    fn evals_for_with_guard() {
+        let source = r#"
+            for x in [1, 2, 3] if x > 1 { x }
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let program = parse_program(&tokens).expect("parse");
+        validate_program(&program).expect("validate");
+        let core = lower_program(program);
+        let value = eval_program(&core).expect("eval").expect("value");
+        assert_eq!(value, Value::List(vec![Value::Int(2), Value::Int(3)]));
+    }
+
+    #[test]
+    fn evals_range_list() {
+        let source = r#"
+            [1..4]
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let program = parse_program(&tokens).expect("parse");
+        validate_program(&program).expect("validate");
+        let core = lower_program(program);
+        let value = eval_program(&core).expect("eval").expect("value");
+        assert_eq!(
+            value,
+            Value::List(vec![
+                Value::Int(1),
+                Value::Int(2),
+                Value::Int(3),
+                Value::Int(4)
+            ])
+        );
     }
 }
 

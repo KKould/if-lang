@@ -398,6 +398,7 @@ impl<'a> Parser<'a> {
             }
             TokenKind::KwIf => self.parse_if_expr(),
             TokenKind::KwMatch => self.parse_match_expr(),
+            TokenKind::KwFor => self.parse_for_expr(),
             TokenKind::Invalid(ch) => Err(self.error_here(&format!("invalid character '{}'", ch))),
             _ => Err(self.error_here("unexpected token")),
         }
@@ -410,13 +411,24 @@ impl<'a> Parser<'a> {
             self.advance();
             return Ok(Expr::List(items));
         }
+        let first = self.parse_expr()?;
+        if matches!(self.peek_kind(), TokenKind::DotDot) {
+            self.advance();
+            let end = self.parse_expr()?;
+            self.expect(TokenKind::RBracket)?;
+            return Ok(Expr::RangeList {
+                start: Box::new(first),
+                end: Box::new(end),
+            });
+        }
+        items.push(first);
         loop {
-            items.push(self.parse_expr()?);
             if matches!(self.peek_kind(), TokenKind::Comma) {
                 self.advance();
                 if matches!(self.peek_kind(), TokenKind::RBracket) {
                     break;
                 }
+                items.push(self.parse_expr()?);
                 continue;
             }
             break;
@@ -496,6 +508,33 @@ impl<'a> Parser<'a> {
         Ok(Expr::Match {
             scrutinee: Box::new(scrutinee),
             arms,
+        })
+    }
+
+    fn parse_for_expr(&mut self) -> Result<Expr, Error> {
+        self.expect(TokenKind::KwFor)?;
+        let name = self.expect_ident()?;
+        match self.peek_kind() {
+            TokenKind::Ident(text) if text == "in" => {
+                self.advance();
+            }
+            _ => return Err(self.error_here("expected 'in' after for variable")),
+        }
+        let iter = self.parse_expr()?;
+        let guard = if matches!(self.peek_kind(), TokenKind::KwIf) {
+            self.advance();
+            Some(self.parse_expr()?)
+        } else {
+            None
+        };
+        self.expect(TokenKind::LBrace)?;
+        let body = self.parse_expr()?;
+        self.expect(TokenKind::RBrace)?;
+        Ok(Expr::For {
+            name,
+            iter: Box::new(iter),
+            guard: guard.map(Box::new),
+            body: Box::new(body),
         })
     }
 
@@ -742,5 +781,39 @@ mod tests {
                 .iter()
                 .any(|item| matches!(item, crate::ast::surface::Item::Fn(_)))
         );
+    }
+
+    #[test]
+    fn parses_for_expr() {
+        let source = r#"
+            fn add1(x) = x + 1;
+            for x in [1, 2, 3] { add1(x) }
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let program = parse_program(&tokens).expect("parse");
+        validate_program(&program).expect("validate");
+        assert!(program.expr.is_some());
+    }
+
+    #[test]
+    fn parses_for_with_guard() {
+        let source = r#"
+            for x in [1, 2, 3] if x > 1 { x }
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let program = parse_program(&tokens).expect("parse");
+        validate_program(&program).expect("validate");
+        assert!(program.expr.is_some());
+    }
+
+    #[test]
+    fn parses_range_list() {
+        let source = r#"
+            [1..10]
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let program = parse_program(&tokens).expect("parse");
+        validate_program(&program).expect("validate");
+        assert!(program.expr.is_some());
     }
 }

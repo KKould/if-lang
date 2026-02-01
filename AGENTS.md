@@ -10,6 +10,7 @@ This project is an intent-first, constrained general-purpose functional language
 - **Parameter order constraint**: for each function, the **first appearance order** of parameters in the body must match the signature order (repeats allowed).
 - **Match clarity**: `match` is a high-level construct with field destructuring and comparisons.
 - **Avoid deep if nesting**: when branching gets multi-level, prefer `match` (or a helper fn) to keep intent clear.
+- **Guard complexity**: when using `for ... if <guard> { ... }`, keep guards concise; if the guard is complex, extract it into a helper `fn` (e.g., `is_valid_row(...)`) to keep the `for` readable.
 - **Agent rule (important)**: keep IF Lang as the core logic expression; implement only the minimal required methods in `extra`.
 - **Logic placement**: all core logic must live in IF Lang; extras provide only the minimal necessary operations.
 - **IF-first workflow**: finish the IF source (data/extern/fn/let plus any demos/tests) before starting on extras, CLIs, or host tooling; only add glue once the IF logic is reviewed.

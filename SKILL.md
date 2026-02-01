@@ -11,6 +11,7 @@ description: Work with IF Lang source, syntax, and compiler pipeline in this rep
 - Externs must be explicit: declare with `extern fn` and include `explain { ... }`.
 - Enforce parameter order constraint: the first appearance order of parameters in the body must match the signature order (repeats allowed).
 - Avoid deep `if` nesting; prefer `match` (or a helper fn) when branching grows.
+- Guard complexity: when using `for ... if <guard> { ... }`, keep guards concise; if the guard is complex, extract it into a helper `fn` to keep the `for` readable.
 - Keep all core logic in IF Lang; extras should only provide the minimal necessary operations.
 - Finish the IF program first: design/implement the `.if` source (including sample data/tests) before writing extras, CLIs, or host glue; only once IF is approved should extras be touched.
 - Prefer grouping code by responsibility and mark each block with concise comments.

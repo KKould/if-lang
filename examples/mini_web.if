@@ -4,6 +4,7 @@ extern fn str_len(s) explain { Returns UTF-8 byte length. };
 extern fn int_to_str(n) explain { Converts Int to Str. };
 
 data Request = Request { method, path, query, raw };
+data LinkItem = LinkItem { href, label };
 
 fn join(parts) = str_join(parts, "");
 
@@ -59,15 +60,24 @@ fn code(body) = join(["<code>", body, "</code>"]);
 fn li(body) = join(["<li>", body, "</li>"]);
 fn ul(items) = join(["<ul>", str_join(items, ""), "</ul>"]);
 
+let nav_links =
+  [
+    LinkItem { href: "/", label: "Home" },
+    LinkItem { href: "/docs", label: "Docs" },
+    LinkItem { href: "/api", label: "API" },
+  ];
+
+fn render_nav_link(item) =
+  match item {
+    LinkItem { href, label } => link(href, label);
+    _ => "";
+  };
+
 fn nav() =
   join(
     [
       "<nav>",
-      link("/", "Home"),
-      " | ",
-      link("/docs", "Docs"),
-      " | ",
-      link("/api", "API"),
+      str_join(for item in nav_links { render_nav_link(item) }, " | "),
       "</nav>",
     ],
   );
@@ -116,6 +126,11 @@ let docs_page =
         p("Handler returns a full HTTP response string."),
         p(
           join(
+            ["Example ports: ", str_join(for p in [8080..8082] { int_to_str(p) }, ", ")],
+          ),
+        ),
+        p(
+          join(
             ["Example: ", code("extern fn serve(port, handler) explain { Start server. };")],
           ),
         ),
@@ -134,11 +149,7 @@ let api_page =
       [
         h1("API list"),
         ul(
-          [
-            li(link("/api/info", "/api/info")),
-            li(link("/api/features", "/api/features")),
-            li(link("/api/routes", "/api/routes")),
-          ],
+          for path in ["/api/info", "/api/features", "/api/routes"] { li(link(path, path)) },
         ),
       ],
     ),
