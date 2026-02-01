@@ -12,6 +12,7 @@ This project is an intent-first, constrained general-purpose functional language
 - **Avoid deep if nesting**: when branching gets multi-level, prefer `match` (or a helper fn) to keep intent clear.
 - **Agent rule (important)**: keep IF Lang as the core logic expression; implement only the minimal required methods in `extra`.
 - **Logic placement**: all core logic must live in IF Lang; extras provide only the minimal necessary operations.
+- **IF-first workflow**: finish the IF source (data/extern/fn/let plus any demos/tests) before starting on extras, CLIs, or host tooling; only add glue once the IF logic is reviewed.
 - **Structure**: group code by responsibility and mark sections with concise comments.
 
 ## Program structure

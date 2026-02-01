@@ -12,6 +12,7 @@ description: Work with IF Lang source, syntax, and compiler pipeline in this rep
 - Enforce parameter order constraint: the first appearance order of parameters in the body must match the signature order (repeats allowed).
 - Avoid deep `if` nesting; prefer `match` (or a helper fn) when branching grows.
 - Keep all core logic in IF Lang; extras should only provide the minimal necessary operations.
+- Finish the IF program first: design/implement the `.if` source (including sample data/tests) before writing extras, CLIs, or host glue; only once IF is approved should extras be touched.
 - Prefer grouping code by responsibility and mark each block with concise comments.
 
 ## Program structure
