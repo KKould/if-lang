@@ -8,6 +8,7 @@ description: Work with IF Lang source, syntax, and compiler pipeline in this rep
 ## Core rules
 - Keep IF Lang as the core logic; implement only the minimal required extern glue in extras.
 - Functions are pure by default; no implicit state, mutation, or IO.
+- Stateful or incremental behavior across refreshes must be handled in extras (or via explicit state passed back in), not inside IF.
 - Externs must be explicit: declare with `extern fn` and include `explain { ... }`.
 - Enforce parameter order constraint: the first appearance order of parameters in the body must match the signature order (repeats allowed).
 - Avoid deep `if` nesting; prefer `match` (or a helper fn) when branching grows.
@@ -15,6 +16,12 @@ description: Work with IF Lang source, syntax, and compiler pipeline in this rep
 - Keep all core logic in IF Lang; extras should only provide the minimal necessary operations.
 - Finish the IF program first: design/implement the `.if` source (including sample data/tests) before writing extras, CLIs, or host glue; only once IF is approved should extras be touched.
 - Prefer grouping code by responsibility and mark each block with concise comments.
+
+## Logic placement (IF-first)
+- Put all deterministic transformations in IF (filter/sort/group/aggregate/format/render/classify).
+- Extras are limited to IO (network/file/terminal), state storage across runs/refreshes, and primitives IF cannot express.
+- If cross-refresh state is required, extras should only persist/restore state; decision logic stays in IF.
+- Avoid business-rule decisions in extras unless forced by external constraints (e.g., auth/rate limits).
 
 ## Program structure
 - Top-level items must end with `;` (data, extern fn, fn, let).

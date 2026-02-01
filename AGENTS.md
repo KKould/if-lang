@@ -4,6 +4,7 @@ This project is an intent-first, constrained general-purpose functional language
 
 ## Core ideas
 - **Pure functions by default**: no implicit state, mutation, or IO.
+- **Stateful/incremental behavior**: anything that must remember across refreshes runs must live in extras (or explicit state passed back in).
 - **Intent-first pipelines**: `x |> f(a)` means `f(x, a)` (input becomes the first argument).
 - **Pipeline style rule**: use `|>` only to flatten nested calls; for simple single-call cases, prefer `f(x)` over `x |> f`.
 - **Externs are explicit**: any host-provided function must be declared with `extern fn` and an `explain { ... }` block.
