@@ -23,7 +23,7 @@ description: Work with IF Lang source, syntax, and compiler pipeline in this rep
 ## Syntax essentials
 - Variants are Uppercase; constructor literals are only parsed for Uppercase names.
 - Constructors use named fields; field shorthand is allowed.
-- Calls require a bare identifier callee; trailing commas are not allowed in call args or parameter lists.
+- Calls require a bare identifier callee; trailing commas are not allowed in call args or parameter lists (double-check and remove any trailing comma before `)`).
 - `explain` is reserved and cannot be used as an identifier.
 
 ## Expressions and patterns
