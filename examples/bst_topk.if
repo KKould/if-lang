@@ -11,13 +11,13 @@ fn insert(t, x) =
         Node {
           value,
           left: insert(left, x),
-          right,
+          right
         }
       } else {
         Node {
           value,
           left,
-          right: insert(right, x),
+          right: insert(right, x)
         }
       };
   };

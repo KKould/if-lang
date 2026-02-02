@@ -610,10 +610,13 @@ fn format_list(items: &[Expr], indent: usize, allow_multiline: bool) -> String {
     let mut out = String::new();
     out.push_str("[\n");
     let item_indent = indent + 1;
-    for item in items {
+    for (idx, item) in items.iter().enumerate() {
         out.push_str(&indent_str(item_indent));
         out.push_str(&format_expr_inline_prec(item, 0, false, item_indent, true));
-        out.push_str(",\n");
+        if idx + 1 < items.len() {
+            out.push(',');
+        }
+        out.push('\n');
     }
     out.push_str(&indent_str(indent));
     out.push(']');
@@ -701,23 +704,21 @@ fn format_construct_multiline(name: &str, fields: &[(String, Expr)], indent: usi
     out.push_str(name);
     out.push_str(" {\n");
     let field_indent = indent + 1;
-    for (field, expr) in fields {
+    for (idx, (field, expr)) in fields.iter().enumerate() {
+        let is_last = idx + 1 == fields.len();
         out.push_str(&indent_str(field_indent));
         if matches!(expr, Expr::Var(var) if var == field) {
             out.push_str(field);
-            out.push_str(",\n");
         } else {
             out.push_str(field);
             out.push_str(": ");
             let rendered = format_expr_inline_prec(expr, 0, false, field_indent, true);
-            if rendered.contains('\n') {
-                out.push_str(&rendered);
-                out.push('\n');
-            } else {
-                out.push_str(&rendered);
-                out.push_str(",\n");
-            }
+            out.push_str(&rendered);
         }
+        if !is_last {
+            out.push(',');
+        }
+        out.push('\n');
     }
     out.push_str(&indent_str(indent));
     out.push('}');
@@ -881,10 +882,13 @@ fn format_call(callee: &str, args: &[Expr], indent: usize, allow_multiline: bool
     out.push_str(callee);
     out.push_str("(\n");
     let arg_indent = indent + 1;
-    for arg in args {
+    for (idx, arg) in args.iter().enumerate() {
         out.push_str(&indent_str(arg_indent));
         out.push_str(&format_expr_inline_prec(arg, 0, false, arg_indent, true));
-        out.push_str(",\n");
+        if idx + 1 < args.len() {
+            out.push(',');
+        }
+        out.push('\n');
     }
     out.push_str(&indent_str(indent));
     out.push(')');
@@ -1252,5 +1256,23 @@ mod tests {
         validate_program(&program).expect("validate");
         let formatted = format_program(&program);
         assert!(formatted.contains("[1..10]"));
+    }
+
+    #[test]
+    fn avoids_trailing_commas_in_multiline() {
+        let source = r#"
+            data Foo = Foo { a, b };
+            extern fn build(a, b, c, d, e) explain { ok. };
+            let xs = [1, 2, 3, 4, 5];
+            let ys = build(1, 2, 3, 4, 5);
+            let f = Foo { a: [1, 2, 3, 4, 5], b: build(1, 2, 3, 4, 5) };
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let program = parse_program(&tokens).expect("parse");
+        validate_program(&program).expect("validate");
+        let formatted = format_program(&program);
+        assert!(!formatted.contains(",\n]"));
+        assert!(!formatted.contains(",\n)"));
+        assert!(!formatted.contains(",\n}"));
     }
 }

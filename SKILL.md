@@ -18,10 +18,20 @@ description: Work with IF Lang source, syntax, and compiler pipeline in this rep
 - Prefer grouping code by responsibility and mark each block with concise comments.
 
 ## Logic placement (IF-first)
-- Put all deterministic transformations in IF (filter/sort/group/aggregate/format/render/classify).
-- Extras are limited to IO (network/file/terminal), state storage across runs/refreshes, and primitives IF cannot express.
-- If cross-refresh state is required, extras should only persist/restore state; decision logic stays in IF.
-- Avoid business-rule decisions in extras unless forced by external constraints (e.g., auth/rate limits).
+- Define all domain data structures in IF (shapes / fields / variants).  
+  Extras must not redefine or extend domain models.
+- Extras may only mutate or persist state constructed from IF-defined structures;  
+  they must not invent new shapes or implicit schemas.
+- All deterministic logic belongs in IF  
+  (filter / sort / group / aggregate / format / render / classify).
+- Extras are restricted to:
+    - IO (network / file / terminal)
+    - State persistence across runs or refreshes
+    - Low-level primitives fundamentally unavailable in IF
+- When cross-refresh state is needed, extras should only persist and restore state;  
+  all decision-making and control flow must remain in IF.
+- Business-rule decisions must not live in extras,  
+  except when strictly required by external constraints (e.g. auth, rate limits).
 
 ## Program structure
 - Top-level items must end with `;` (data, extern fn, fn, let).

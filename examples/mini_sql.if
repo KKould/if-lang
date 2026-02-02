@@ -79,7 +79,7 @@ fn db_query(db, sql) =
     _ =>
       Result {
         columns: [],
-        rows: [],
+        rows: []
       };
   };
 
@@ -87,7 +87,7 @@ fn query_tables(idx, tables, query) =
   if idx >= list_len(tables) {
     Result {
       columns: [],
-      rows: [],
+      rows: []
     }
   } else {
     if (tables |> list_get(idx) |> table_name) == query_table(query) {
@@ -101,12 +101,12 @@ fn execute_query(query, table) =
   if query_has_where(query) {
     Result {
       columns: table_columns(table),
-      rows: filter_rows(table_rows(table), query_where_expr(query), table_columns(table)),
+      rows: filter_rows(table_rows(table), query_where_expr(query), table_columns(table))
     }
   } else {
     Result {
       columns: table_columns(table),
-      rows: table_rows(table),
+      rows: table_rows(table)
     }
   };
 
@@ -121,7 +121,7 @@ fn eval_pred(expr, columns, row) =
       compare_values(
         op,
         eval_expr_value(left, columns, row),
-        eval_expr_value(right, columns, row),
+        eval_expr_value(right, columns, row)
       );
     _ => false;
   };
@@ -176,13 +176,13 @@ fn parse_sql_tokens(tokens) =
     Query {
       table: list_get(tokens, tok_table),
       has_where: false,
-      where_expr: empty_expr,
+      where_expr: empty_expr
     }
   } else {
     Query {
       table: list_get(tokens, tok_table),
       has_where: true,
-      where_expr: parse_where_expr(tokens),
+      where_expr: parse_where_expr(tokens)
     }
   };
 
@@ -190,7 +190,7 @@ fn parse_where_expr(tokens) =
   Binary {
     op: list_get(tokens, tok_where_op),
     left: Column { name: list_get(tokens, tok_where_col) },
-    right: Int { value: tokens |> list_get(tok_where_val) |> str_to_int },
+    right: Int { value: tokens |> list_get(tok_where_val) |> str_to_int }
   };
 
 fn query_table(q) =
@@ -224,7 +224,7 @@ let q1 = db_query(db, "select * from t1 where c1 > 1;");
 let expected1 =
   Result {
     columns: ["c1", "c2"],
-    rows: [[2, "beta"], [3, "gamma"]],
+    rows: [[2, "beta"], [3, "gamma"]]
   };
 let ok1 = assert_eq(q1, expected1);
 let q2 = db_query(db, "select * from t1;");
@@ -232,7 +232,7 @@ let q2 = db_query(db, "select * from t1;");
 let expected2 =
   Result {
     columns: ["c1", "c2"],
-    rows: [[1, "alpha"], [2, "beta"], [3, "gamma"], [0, "zero"]],
+    rows: [[1, "alpha"], [2, "beta"], [3, "gamma"], [0, "zero"]]
   };
 let ok2 = assert_eq(q2, expected2);
 

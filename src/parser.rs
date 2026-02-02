@@ -148,6 +148,9 @@ impl<'a> Parser<'a> {
             params.push(self.expect_ident()?);
             if matches!(self.peek_kind(), TokenKind::Comma) {
                 self.advance();
+                if matches!(self.peek_kind(), TokenKind::RParen) {
+                    break;
+                }
                 continue;
             }
             break;
@@ -164,6 +167,9 @@ impl<'a> Parser<'a> {
             args.push(self.parse_expr()?);
             if matches!(self.peek_kind(), TokenKind::Comma) {
                 self.advance();
+                if matches!(self.peek_kind(), TokenKind::RParen) {
+                    break;
+                }
                 continue;
             }
             break;
@@ -810,6 +816,19 @@ mod tests {
     fn parses_range_list() {
         let source = r#"
             [1..10]
+        "#;
+        let tokens = Lexer::new(source).lex_all();
+        let program = parse_program(&tokens).expect("parse");
+        validate_program(&program).expect("validate");
+        assert!(program.expr.is_some());
+    }
+
+    #[test]
+    fn parses_trailing_commas_in_calls_and_params() {
+        let source = r#"
+            extern fn build(a, b, c,) explain { ok. };
+            fn f(x, y,) = build(x, y, 3,);
+            f(1, 2,)
         "#;
         let tokens = Lexer::new(source).lex_all();
         let program = parse_program(&tokens).expect("parse");
